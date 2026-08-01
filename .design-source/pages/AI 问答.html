@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 问答 - 智能题库</title>
+    <style id="theme-vars">
+:root {
+  /* === Brand Primary (Indigo) === */
+  --brand: #4F46E5;
+  --brand-light: #818CF8;
+  --brand-dark: #3730A3;
+  --brand-8: rgba(79, 70, 229, 0.08);
+  --brand-15: rgba(79, 70, 229, 0.15);
+  --brand-ink: #FFFFFF;
+
+  /* === Neutral Scale === */
+  --bg: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-2: #F1F5F9;
+  --surface-3: #E2E8F0;
+  --ink: #0F172A;
+  --ink-2: #64748B;
+  --ink-3: #94A3B8;
+  --line: #E2E8F0;
+
+  /* === State Colors === */
+  --state-success: #16A34A;
+  --state-warning: #D97706;
+  --state-error: #DC2626;
+  --state-info: #2563EB;
+
+  /* === Semantic Aliases === */
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--brand);
+  --color-primary-foreground: var(--brand-ink);
+  --color-muted: var(--surface-2);
+  --color-muted-foreground: var(--ink-2);
+  --color-border: var(--line);
+  --color-input: var(--line);
+  --color-ring: var(--brand);
+  --color-radius-sm: var(--radius-sm);
+  --color-radius-md: var(--radius-md);
+  --color-radius-lg: var(--radius-lg);
+
+  /* === Radius === */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* === Spacing === */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 80px;
+
+  /* === Shadow === */
+  --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 1px rgba(15, 23, 42, 0.03);
+  --shadow-2: 0 8px 24px -8px rgba(15, 23, 42, 0.18);
+
+  /* === Typography === */
+  --font-sans: "Inter", "Noto Sans SC", "PingFang SC", "HarmonyOS Sans", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+
+  /* === Liquid Glass Effect === */
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-blur: 20px;
+  --glass-shadow: 0 -2px 16px rgba(15, 23, 42, 0.08);
+}
+
+/* Dark Mode */
+.dark {
+  --bg: #0B0F1A;
+  --surface: #141926;
+  --surface-2: #1E2536;
+  --surface-3: #2A3348;
+  --ink: #F1F5F9;
+  --ink-2: #94A3B8;
+  --ink-3: #64748B;
+  --line: #2A3348;
+  --glass-bg: rgba(20, 25, 38, 0.72);
+  --glass-border: rgba(42, 51, 72, 0.5);
+  --glass-shadow: 0 -2px 16px rgba(0, 0, 0, 0.24);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--color-background);
+    --color-foreground: var(--color-foreground);
+    --color-card: var(--color-card);
+    --color-card-foreground: var(--color-card-foreground);
+    --color-popover: var(--color-popover);
+    --color-popover-foreground: var(--color-popover-foreground);
+    --color-primary: var(--color-primary);
+    --color-primary-foreground: var(--color-primary-foreground);
+    --color-muted: var(--color-muted);
+    --color-muted-foreground: var(--color-muted-foreground);
+    --color-border: var(--color-border);
+    --color-input: var(--color-input);
+    --color-ring: var(--color-ring);
+    --radius-sm: var(--color-radius-sm);
+    --radius-md: var(--color-radius-md);
+    --radius-lg: var(--color-radius-lg);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--color-background); }
+      .text-background { color: var(--color-background); }
+      .border-background { border-color: var(--color-background); }
+      .ring-background { --tw-ring-color: var(--color-background); }
+      .bg-foreground { background-color: var(--color-foreground); }
+      .text-foreground { color: var(--color-foreground); }
+      .border-foreground { border-color: var(--color-foreground); }
+      .ring-foreground { --tw-ring-color: var(--color-foreground); }
+      .bg-card { background-color: var(--color-card); }
+      .text-card { color: var(--color-card); }
+      .border-card { border-color: var(--color-card); }
+      .ring-card { --tw-ring-color: var(--color-card); }
+      .bg-card-foreground { background-color: var(--color-card-foreground); }
+      .text-card-foreground { color: var(--color-card-foreground); }
+      .border-card-foreground { border-color: var(--color-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--color-card-foreground); }
+      .bg-popover { background-color: var(--color-popover); }
+      .text-popover { color: var(--color-popover); }
+      .border-popover { border-color: var(--color-popover); }
+      .ring-popover { --tw-ring-color: var(--color-popover); }
+      .bg-popover-foreground { background-color: var(--color-popover-foreground); }
+      .text-popover-foreground { color: var(--color-popover-foreground); }
+      .border-popover-foreground { border-color: var(--color-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--color-popover-foreground); }
+      .bg-primary { background-color: var(--color-primary); }
+      .text-primary { color: var(--color-primary); }
+      .border-primary { border-color: var(--color-primary); }
+      .ring-primary { --tw-ring-color: var(--color-primary); }
+      .bg-primary-foreground { background-color: var(--color-primary-foreground); }
+      .text-primary-foreground { color: var(--color-primary-foreground); }
+      .border-primary-foreground { border-color: var(--color-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--color-primary-foreground); }
+      .bg-muted { background-color: var(--color-muted); }
+      .text-muted { color: var(--color-muted); }
+      .border-muted { border-color: var(--color-muted); }
+      .ring-muted { --tw-ring-color: var(--color-muted); }
+      .bg-muted-foreground { background-color: var(--color-muted-foreground); }
+      .text-muted-foreground { color: var(--color-muted-foreground); }
+      .border-muted-foreground { border-color: var(--color-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--color-muted-foreground); }
+      .bg-border { background-color: var(--color-border); }
+      .text-border { color: var(--color-border); }
+      .border-border { border-color: var(--color-border); }
+      .ring-border { --tw-ring-color: var(--color-border); }
+      .bg-input { background-color: var(--color-input); }
+      .text-input { color: var(--color-input); }
+      .border-input { border-color: var(--color-input); }
+      .ring-input { --tw-ring-color: var(--color-input); }
+      .bg-ring { background-color: var(--color-ring); }
+      .text-ring { color: var(--color-ring); }
+      .border-ring { border-color: var(--color-ring); }
+      .ring-ring { --tw-ring-color: var(--color-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="bg-[var(--bg)] font-[var(--font-sans)] text-[var(--ink)]">
+  <div id="app-shell" class="flex flex-col">
+
+    <!-- Top Bar -->
+    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[28rem] z-50 bg-[var(--bg)]/95 backdrop-blur-md border-b border-[var(--line)]">
+      <div class="flex items-center justify-between px-4 pt-12 pb-3">
+        <!-- Left: Back arrow (decorative) -->
+        <div class="w-9 h-9 flex items-center justify-center text-[var(--ink-2)]">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </div>
+        <!-- Center: Title -->
+        <h1 class="text-[18px] font-semibold text-[var(--ink)]">AI 问答</h1>
+        <!-- Right: Settings -->
+        <button data-dom-id="btn-api-settings" class="w-9 h-9 flex items-center justify-center text-[var(--ink-2)] rounded-full hover:bg-[var(--surface-2)] transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+
+      <!-- API Status Indicator -->
+      <div class="flex items-center justify-between px-4 pb-2">
+        <span class="status-pill">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m6.8 15-3.5 2"/><path d="m20.7 17-3.5-2"/><path d="M6.8 9 3.3 7"/><path d="m20.7 7-3.5 2"/><circle cx="12" cy="12" r="4"/></svg>
+          GPT-4o
+        </span>
+        <span class="flex items-center gap-1.5 text-xs font-medium" style="color: var(--state-success);">
+          <span class="w-2 h-2 rounded-full inline-block" style="background: var(--state-success);"></span>
+          已连接
+        </span>
+      </div>
+    </div>
+
+    <!-- Chat Messages Area -->
+    <div class="chat-area px-4 pt-[132px] pb-[140px]">
+      <div class="flex flex-col gap-4">
+
+        <!-- Message 1: User -->
+        <div class="chat-message user">
+          <div class="chat-bubble user-bubble">
+            请帮我解释一下牛顿第三定律和牛顿第二定律的区别
+          </div>
+        </div>
+
+        <!-- Message 2: AI -->
+        <div class="chat-message">
+          <div class="ai-avatar">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+          </div>
+          <div class="chat-bubble ai-bubble">
+            <p class="text-[var(--ink)] mb-2"><strong>牛顿第二定律（F = ma）</strong>描述的是力、质量和加速度之间的定量关系：物体受到的合力等于质量乘以加速度。它告诉我们力是如何改变物体运动状态的。</p>
+            <p class="text-[var(--ink)] mb-2"><strong>牛顿第三定律（作用力与反作用力）</strong>指出，两个物体之间的作用力和反作用力总是大小相等、方向相反、作用在同一条直线上。</p>
+            <p class="text-[var(--ink)]">简单来说，第二定律研究的是一个物体受力后如何运动，而第三定律描述的是两个物体之间力的相互关系。两者适用于不同的分析场景。</p>
+          </div>
+        </div>
+
+        <!-- Message 3: User -->
+        <div class="chat-message user">
+          <div class="chat-bubble user-bubble">
+            能用具体的例子说明吗？
+          </div>
+        </div>
+
+        <!-- Message 4: AI -->
+        <div class="chat-message">
+          <div class="ai-avatar">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+          </div>
+          <div class="chat-bubble ai-bubble">
+            <p class="text-[var(--ink)] mb-3">当然可以。我们用两个常见的生活场景来对比说明：</p>
+
+            <div class="example-box">
+              <p class="text-[var(--ink-2)] font-medium mb-1">牛顿第二定律的例子 -- 推购物车</p>
+              <p class="text-[var(--ink)]">你用 50N 的力推一辆 10kg 的购物车，购物车获得 5m/s² 的加速度（a = F/m = 50/10）。如果购物车装满东西变成 50kg，同样的力只能产生 1m/s² 的加速度。这就是第二定律：力不变时，质量越大，加速度越小。</p>
+            </div>
+
+            <div class="example-box mt-2">
+              <p class="text-[var(--ink-2)] font-medium mb-1">牛顿第三定律的例子 -- 火箭发射</p>
+              <p class="text-[var(--ink)]">火箭向下喷射高温气体（作用力），气体同时对火箭产生一个大小相等、方向向上的反作用力，推动火箭升空。作用力和反作用力分别作用在气体和火箭两个不同的物体上，这就是第三定律的体现。</p>
+            </div>
+
+            <p class="text-[var(--ink)] mt-3">总结：第二定律关注的是单个物体"受多少力、怎么动"，第三定律关注的是两个物体之间"力的配对关系"。</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Message Input Area -->
+    <div class="input-bar">
+      <div class="flex items-center gap-2">
+        <!-- Attach icon -->
+        <button class="w-8 h-8 flex items-center justify-center text-[var(--ink-3)] hover:text-[var(--ink-2)] transition-colors flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <!-- Input field -->
+        <input
+          type="text"
+          placeholder="输入你的问题..."
+          class="flex-1 h-[44px] px-4 bg-[var(--surface-2)] border border-[var(--line)] rounded-full text-sm text-[var(--ink)] placeholder:text-[var(--ink-3)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 focus:border-[var(--brand)] transition-all"
+        >
+        <!-- Send button -->
+        <button data-dom-id="btn-send-message" class="w-8 h-8 flex items-center justify-center rounded-full text-white flex-shrink-0" style="background: var(--brand);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav-bar">
+    <a href="home.html" data-nav-key="home" data-mobile-nav="global" data-dom-id="nav-home">
+      <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span class="nav-label whitespace-nowrap max-w-full truncate">首页</span>
+    </a>
+    <a href="question-bank.html" data-nav-key="question-bank" data-mobile-nav="global" data-dom-id="nav-question-bank">
+      <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+      <span class="nav-label whitespace-nowrap max-w-full truncate">题库</span>
+    </a>
+    <a href="ai-chat.html" data-nav-key="ai-chat" data-mobile-nav="global" data-active="true">
+      <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span class="nav-label whitespace-nowrap max-w-full truncate">AI问答</span>
+    </a>
+    <a href="practice-setup.html" data-nav-key="random-practice" data-mobile-nav="global" data-dom-id="nav-random-practice">
+      <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+      <span class="nav-label whitespace-nowrap max-w-full truncate">练习</span>
+    </a>
+    <a href="statistics.html" data-nav-key="statistics" data-mobile-nav="global" data-dom-id="nav-statistics">
+      <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span class="nav-label whitespace-nowrap max-w-full truncate">我的</span>
+    </a>
+  </nav>
+
+  <script>lucide.createIcons();</script>
+
+    <style>
+    /* ── Project Shell — shared layout & bottom nav ── */
+    #app-shell {
+      min-height: 100vh;
+      padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 16px);
+    }
+
+    /* ── Bottom Navigation Bar (Liquid Glass) ── */
+    .bottom-nav-bar {
+      position: fixed;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 28rem; /* 448px — matches max-w-md */
+      height: 56px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      align-items: center;
+      gap: 0;
+
+      /* Liquid Glass */
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border-top: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+      border-radius: 20px 20px 0 0;
+
+      /* Safe area */
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+
+      z-index: 1000;
+    }
+
+    .bottom-nav-bar a {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      text-decoration: none;
+      color: var(--ink-3);
+      font-weight: 400;
+      font-family: var(--font-sans);
+      -webkit-tap-highlight-color: transparent;
+      transition: color 0.2s ease;
+    }
+
+    .bottom-nav-bar a .nav-icon {
+      width: 20px;
+      height: 20px;
+      stroke-width: 1.8;
+    }
+
+    .bottom-nav-bar a .nav-label {
+      font-size: 11px;
+      line-height: 1;
+    }
+
+    /* Active state */
+    .bottom-nav-bar a[data-active="true"] {
+      color: var(--brand);
+      font-weight: 600;
+    }
+
+    /* ── AI Chat Page Styles ── */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .chat-message {
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-message.user {
+      justify-content: flex-end;
+    }
+
+    .chat-bubble {
+      max-width: 85%;
+      padding: 12px 16px;
+      line-height: 1.6;
+      font-size: 14px;
+      word-break: break-word;
+    }
+
+    .chat-bubble.user-bubble {
+      background: var(--brand);
+      color: #FFFFFF;
+      border-radius: 16px 16px 4px 16px;
+      max-width: 80%;
+    }
+
+    .chat-bubble.ai-bubble {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px 16px 16px 4px;
+    }
+
+    .ai-avatar {
+      width: 24px;
+      height: 24px;
+      min-width: 24px;
+      border-radius: 50%;
+      background: var(--brand);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 2px;
+    }
+
+    .ai-avatar svg {
+      width: 14px;
+      height: 14px;
+      color: #FFFFFF;
+    }
+
+    .example-box {
+      background: var(--surface-2);
+      border-left: 3px solid var(--brand-light);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+
+    .input-bar {
+      position: fixed;
+      bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 28rem;
+      background: var(--surface);
+      padding: 8px 12px;
+      box-shadow: 0 -1px 8px rgba(15, 23, 42, 0.06);
+      z-index: 999;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      background: var(--brand-8);
+      color: var(--brand);
+      border-radius: var(--radius-full);
+      font-size: 12px;
+      font-weight: 500;
+    }
+  </style>
+</body>
+</html>

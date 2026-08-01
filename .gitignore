@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+
+# Android build artifacts
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/captures/
+android/.idea/
+*.iml
+
+# Generated files
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+
+# Logs and crash dumps
+*.log
+hs_err_pid*.log
+
+# Local installers
+*.apk
+*.aab
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+*.swp

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题库管理 - 智能题库</title>
+    <style id="theme-vars">
+:root {
+  /* === Brand Primary (Indigo) === */
+  --brand: #4F46E5;
+  --brand-light: #818CF8;
+  --brand-dark: #3730A3;
+  --brand-8: rgba(79, 70, 229, 0.08);
+  --brand-15: rgba(79, 70, 229, 0.15);
+  --brand-ink: #FFFFFF;
+
+  /* === Neutral Scale === */
+  --bg: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-2: #F1F5F9;
+  --surface-3: #E2E8F0;
+  --ink: #0F172A;
+  --ink-2: #64748B;
+  --ink-3: #94A3B8;
+  --line: #E2E8F0;
+
+  /* === State Colors === */
+  --state-success: #16A34A;
+  --state-warning: #D97706;
+  --state-error: #DC2626;
+  --state-info: #2563EB;
+
+  /* === Semantic Aliases === */
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--brand);
+  --color-primary-foreground: var(--brand-ink);
+  --color-muted: var(--surface-2);
+  --color-muted-foreground: var(--ink-2);
+  --color-border: var(--line);
+  --color-input: var(--line);
+  --color-ring: var(--brand);
+  --color-radius-sm: var(--radius-sm);
+  --color-radius-md: var(--radius-md);
+  --color-radius-lg: var(--radius-lg);
+
+  /* === Radius === */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* === Spacing === */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 80px;
+
+  /* === Shadow === */
+  --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 1px rgba(15, 23, 42, 0.03);
+  --shadow-2: 0 8px 24px -8px rgba(15, 23, 42, 0.18);
+
+  /* === Typography === */
+  --font-sans: "Inter", "Noto Sans SC", "PingFang SC", "HarmonyOS Sans", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+
+  /* === Liquid Glass Effect === */
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-blur: 20px;
+  --glass-shadow: 0 -2px 16px rgba(15, 23, 42, 0.08);
+}
+
+/* Dark Mode */
+.dark {
+  --bg: #0B0F1A;
+  --surface: #141926;
+  --surface-2: #1E2536;
+  --surface-3: #2A3348;
+  --ink: #F1F5F9;
+  --ink-2: #94A3B8;
+  --ink-3: #64748B;
+  --line: #2A3348;
+  --glass-bg: rgba(20, 25, 38, 0.72);
+  --glass-border: rgba(42, 51, 72, 0.5);
+  --glass-shadow: 0 -2px 16px rgba(0, 0, 0, 0.24);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--color-background);
+    --color-foreground: var(--color-foreground);
+    --color-card: var(--color-card);
+    --color-card-foreground: var(--color-card-foreground);
+    --color-popover: var(--color-popover);
+    --color-popover-foreground: var(--color-popover-foreground);
+    --color-primary: var(--color-primary);
+    --color-primary-foreground: var(--color-primary-foreground);
+    --color-muted: var(--color-muted);
+    --color-muted-foreground: var(--color-muted-foreground);
+    --color-border: var(--color-border);
+    --color-input: var(--color-input);
+    --color-ring: var(--color-ring);
+    --radius-sm: var(--color-radius-sm);
+    --radius-md: var(--color-radius-md);
+    --radius-lg: var(--color-radius-lg);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--color-background); }
+      .text-background { color: var(--color-background); }
+      .border-background { border-color: var(--color-background); }
+      .ring-background { --tw-ring-color: var(--color-background); }
+      .bg-foreground { background-color: var(--color-foreground); }
+      .text-foreground { color: var(--color-foreground); }
+      .border-foreground { border-color: var(--color-foreground); }
+      .ring-foreground { --tw-ring-color: var(--color-foreground); }
+      .bg-card { background-color: var(--color-card); }
+      .text-card { color: var(--color-card); }
+      .border-card { border-color: var(--color-card); }
+      .ring-card { --tw-ring-color: var(--color-card); }
+      .bg-card-foreground { background-color: var(--color-card-foreground); }
+      .text-card-foreground { color: var(--color-card-foreground); }
+      .border-card-foreground { border-color: var(--color-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--color-card-foreground); }
+      .bg-popover { background-color: var(--color-popover); }
+      .text-popover { color: var(--color-popover); }
+      .border-popover { border-color: var(--color-popover); }
+      .ring-popover { --tw-ring-color: var(--color-popover); }
+      .bg-popover-foreground { background-color: var(--color-popover-foreground); }
+      .text-popover-foreground { color: var(--color-popover-foreground); }
+      .border-popover-foreground { border-color: var(--color-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--color-popover-foreground); }
+      .bg-primary { background-color: var(--color-primary); }
+      .text-primary { color: var(--color-primary); }
+      .border-primary { border-color: var(--color-primary); }
+      .ring-primary { --tw-ring-color: var(--color-primary); }
+      .bg-primary-foreground { background-color: var(--color-primary-foreground); }
+      .text-primary-foreground { color: var(--color-primary-foreground); }
+      .border-primary-foreground { border-color: var(--color-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--color-primary-foreground); }
+      .bg-muted { background-color: var(--color-muted); }
+      .text-muted { color: var(--color-muted); }
+      .border-muted { border-color: var(--color-muted); }
+      .ring-muted { --tw-ring-color: var(--color-muted); }
+      .bg-muted-foreground { background-color: var(--color-muted-foreground); }
+      .text-muted-foreground { color: var(--color-muted-foreground); }
+      .border-muted-foreground { border-color: var(--color-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--color-muted-foreground); }
+      .bg-border { background-color: var(--color-border); }
+      .text-border { color: var(--color-border); }
+      .border-border { border-color: var(--color-border); }
+      .ring-border { --tw-ring-color: var(--color-border); }
+      .bg-input { background-color: var(--color-input); }
+      .text-input { color: var(--color-input); }
+      .border-input { border-color: var(--color-input); }
+      .ring-input { --tw-ring-color: var(--color-input); }
+      .bg-ring { background-color: var(--color-ring); }
+      .text-ring { color: var(--color-ring); }
+      .border-ring { border-color: var(--color-ring); }
+      .ring-ring { --tw-ring-color: var(--color-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body style="background: var(--bg); font-family: var(--font-sans); margin: 0;">
+
+<div id="app-shell">
+
+  <!-- ═══════ Top Bar ═══════ -->
+  <div class="px-4 pt-12 flex items-center justify-between">
+    <h1 style="font-size: 20px; font-weight: 600; color: var(--ink); margin: 0;">题库管理</h1>
+    <button data-dom-id="btn-add-question" style="width: 32px; height: 32px; border-radius: var(--radius-full); background: var(--brand); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+
+  <!-- ═══════ Search Bar ═══════ -->
+  <div class="px-4 mt-3">
+    <div style="position: relative; width: 100%; height: 40px; background: var(--surface-2); border-radius: var(--radius-md); display: flex; align-items: center; padding: 0 12px; box-sizing: border-box;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round" style="flex-shrink: 0;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" placeholder="搜索题目、知识点..." style="flex: 1; border: none; outline: none; background: transparent; margin-left: 8px; font-size: 14px; color: var(--ink); font-family: var(--font-sans);">
+    </div>
+  </div>
+
+  <!-- ═══════ Category Tabs ═══════ -->
+  <div class="px-4 mt-3" style="overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none;">
+    <div style="display: flex; gap: 8px;">
+      <span style="display: inline-block; padding: 6px 16px; border-radius: var(--radius-full); background: var(--brand); color: white; font-size: 13px; font-weight: 500; cursor: pointer; flex-shrink: 0;">全部</span>
+      <span style="display: inline-block; padding: 6px 16px; border-radius: var(--radius-full); background: var(--surface-2); color: var(--ink-2); font-size: 13px; font-weight: 400; cursor: pointer; flex-shrink: 0;">数学</span>
+      <span style="display: inline-block; padding: 6px 16px; border-radius: var(--radius-full); background: var(--surface-2); color: var(--ink-2); font-size: 13px; font-weight: 400; cursor: pointer; flex-shrink: 0;">英语</span>
+      <span style="display: inline-block; padding: 6px 16px; border-radius: var(--radius-full); background: var(--surface-2); color: var(--ink-2); font-size: 13px; font-weight: 400; cursor: pointer; flex-shrink: 0;">物理</span>
+      <span style="display: inline-block; padding: 6px 16px; border-radius: var(--radius-full); background: var(--surface-2); color: var(--ink-2); font-size: 13px; font-weight: 400; cursor: pointer; flex-shrink: 0;">化学</span>
+      <span style="display: inline-block; padding: 6px 16px; border-radius: var(--radius-full); background: var(--surface-2); color: var(--ink-2); font-size: 13px; font-weight: 400; cursor: pointer; flex-shrink: 0;">生物</span>
+    </div>
+  </div>
+
+  <!-- ═══════ Stats Bar ═══════ -->
+  <div class="px-4 mt-3 flex items-center justify-between">
+    <span style="font-size: 12px; color: var(--ink-3);">共 1,286 题</span>
+    <span style="font-size: 12px; color: var(--ink-3);">已收藏 45</span>
+  </div>
+
+  <!-- ═══════ Question List ═══════ -->
+  <div class="px-4 pb-24 mt-3">
+
+    <!-- Card 1 -->
+    <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 16px; margin-bottom: 12px;">
+      <div class="flex items-center justify-between" style="margin-bottom: 8px;">
+        <span style="font-size: 13px; font-weight: 600; color: var(--ink);">Q.001</span>
+        <span style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-full); background: var(--brand-8); color: var(--brand); font-weight: 500;">中等</span>
+      </div>
+      <p style="font-size: 14px; color: var(--ink); line-height: 1.5; margin: 0 0 12px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">已知函数 f(x) = x³ - 3x² + 2，求 f(x) 的极值点，并判断在极值点处取得的是极大值还是极小值。</p>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-full); background: var(--surface-2); color: var(--ink-2);">函数与导数</span>
+          <span style="font-size: 11px; color: var(--ink-3);">2024-01-15</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2 -->
+    <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 16px; margin-bottom: 12px;">
+      <div class="flex items-center justify-between" style="margin-bottom: 8px;">
+        <span style="font-size: 13px; font-weight: 600; color: var(--ink);">Q.002</span>
+        <span style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-full); background: var(--brand-8); color: var(--brand); font-weight: 500;">困难</span>
+      </div>
+      <p style="font-size: 14px; color: var(--ink); line-height: 1.5; margin: 0 0 12px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">在等差数列 {aₙ} 中，已知 a₃ + a₈ = 22，a₆ + a₁₁ = 34，求该等差数列的通项公式及前 n 项和 Sₙ。</p>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-full); background: var(--surface-2); color: var(--ink-2);">数列</span>
+          <span style="font-size: 11px; color: var(--ink-3);">2024-01-18</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3 -->
+    <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 16px; margin-bottom: 12px;">
+      <div class="flex items-center justify-between" style="margin-bottom: 8px;">
+        <span style="font-size: 13px; font-weight: 600; color: var(--ink);">Q.003</span>
+        <span style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-full); background: var(--brand-8); color: var(--brand); font-weight: 500;">简单</span>
+      </div>
+      <p style="font-size: 14px; color: var(--ink); line-height: 1.5; margin: 0 0 12px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">将下列短语翻译成英文："随着科技的快速发展，人工智能已深入到我们生活的方方面面，改变了人们的学习和工作方式。"</p>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-full); background: var(--surface-2); color: var(--ink-2);">阅读理解</span>
+          <span style="font-size: 11px; color: var(--ink-3);">2024-02-03</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4 -->
+    <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 16px; margin-bottom: 12px;">
+      <div class="flex items-center justify-between" style="margin-bottom: 8px;">
+        <span style="font-size: 13px; font-weight: 600; color: var(--ink);">Q.004</span>
+        <span style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-full); background: var(--brand-8); color: var(--brand); font-weight: 500;">中等</span>
+      </div>
+      <p style="font-size: 14px; color: var(--ink); line-height: 1.5; margin: 0 0 12px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">一个质量为 2kg 的物体从 20m 高处自由下落（忽略空气阻力，g 取 10m/s²），求物体落地时的速度和下落过程中的平均功率。</p>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-full); background: var(--surface-2); color: var(--ink-2);">力学</span>
+          <span style="font-size: 11px; color: var(--ink-3);">2024-02-10</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 5 -->
+    <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 16px; margin-bottom: 12px;">
+      <div class="flex items-center justify-between" style="margin-bottom: 8px;">
+        <span style="font-size: 13px; font-weight: 600; color: var(--ink);">Q.005</span>
+        <span style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-full); background: var(--brand-8); color: var(--brand); font-weight: 500;">困难</span>
+      </div>
+      <p style="font-size: 14px; color: var(--ink); line-height: 1.5; margin: 0 0 12px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">在标准状况下，将 5.6L 的 CO₂ 气体通入 100mL 1mol/L 的 NaOH 溶液中，求反应后溶液中溶质的成分及其物质的量浓度。</p>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-full); background: var(--surface-2); color: var(--ink-2);">化学反应</span>
+          <span style="font-size: 11px; color: var(--ink-3);">2024-02-22</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ═══════ FAB (Floating Action Button) ═══════ -->
+<button data-dom-id="fab-add-question" style="position: fixed; bottom: 80px; right: 16px; width: 48px; height: 48px; border-radius: var(--radius-full); background: var(--brand); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-2); z-index: 1001;">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+
+<!-- ═══════ Bottom Navigation ═══════ -->
+<nav class="bottom-nav-bar">
+  <a href="home.html" data-nav-key="home" data-mobile-nav="global" data-dom-id="nav-home">
+    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span class="nav-label whitespace-nowrap max-w-full truncate">首页</span>
+  </a>
+  <a href="question-bank.html" data-nav-key="question-bank" data-mobile-nav="global" data-active="true">
+    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+    <span class="nav-label whitespace-nowrap max-w-full truncate">题库</span>
+  </a>
+  <a href="ai-chat.html" data-nav-key="ai-chat" data-mobile-nav="global" data-dom-id="nav-ai-chat">
+    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span class="nav-label whitespace-nowrap max-w-full truncate">AI问答</span>
+  </a>
+  <a href="practice-setup.html" data-nav-key="random-practice" data-mobile-nav="global" data-dom-id="nav-random-practice">
+    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+    <span class="nav-label whitespace-nowrap max-w-full truncate">练习</span>
+  </a>
+  <a href="statistics.html" data-nav-key="statistics" data-mobile-nav="global" data-dom-id="nav-statistics">
+    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    <span class="nav-label whitespace-nowrap max-w-full truncate">我的</span>
+  </a>
+</nav>
+
+
+    <style>
+    /* ── Project Shell — shared layout & bottom nav ── */
+    #app-shell {
+      min-height: 100vh;
+      padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 16px);
+    }
+
+    /* ── Bottom Navigation Bar (Liquid Glass) ── */
+    .bottom-nav-bar {
+      position: fixed;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 28rem;
+      height: 56px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      align-items: center;
+      gap: 0;
+
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border-top: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+      border-radius: 20px 20px 0 0;
+
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+
+      z-index: 1000;
+    }
+
+    .bottom-nav-bar a {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      text-decoration: none;
+      color: var(--ink-3);
+      font-weight: 400;
+      font-family: var(--font-sans);
+      -webkit-tap-highlight-color: transparent;
+      transition: color 0.2s ease;
+    }
+
+    .bottom-nav-bar a .nav-icon {
+      width: 20px;
+      height: 20px;
+      stroke-width: 1.8;
+    }
+
+    .bottom-nav-bar a .nav-label {
+      font-size: 11px;
+      line-height: 1;
+    }
+
+    .bottom-nav-bar a[data-active="true"] {
+      color: var(--brand);
+      font-weight: 600;
+    }
+  </style>
+</body>
+</html>
