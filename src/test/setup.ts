@@ -42,6 +42,15 @@ Object.defineProperty(globalThis, 'window', {
   writable: true,
 })
 
+// jsdom 未实现 scrollTo，测试中组件调用时静默 stub
+if (typeof (globalThis as { scrollTo?: unknown }).scrollTo !== 'function') {
+  Object.defineProperty(globalThis, 'scrollTo', {
+    value: () => undefined,
+    configurable: true,
+    writable: true,
+  })
+}
+
 beforeEach(() => {
   window.localStorage.clear()
 })

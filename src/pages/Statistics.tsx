@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Chart as ChartJS,
@@ -13,9 +13,10 @@ import {
   type ChartOptions,
 } from 'chart.js'
 import { Line, Bar, Doughnut } from 'react-chartjs-2'
-import { BarChart3, Sparkles, ChevronRight, Library, Zap } from 'lucide-react'
+import { BarChart3, Sparkles, ChevronRight, Library, Zap, Download, Upload } from 'lucide-react'
 import AppShell from '../components/AppShell'
 import { useAppStore } from '../store/useAppStore'
+import { exportAllData, importAllData, todayISO } from '../data/persistence'
 import { computeSubjectCounts, fillDailyRecords } from '../data/stats'
 import { SUBJECT_COLORS } from '../data/sample-data'
 
@@ -178,13 +179,25 @@ export default function Statistics() {
     <AppShell>
       <div className="screen-header screen-header-stacked" style={{ flex: 1 }}>
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="page-title">
-            学习统计
-          </h1>
-          <p style={{ fontSize: '14px', color: 'var(--ink-3)', marginTop: '4px' }}>
-            查看你的学习数据
-          </p>
+        <div
+          className="mb-6"
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: '12px',
+            width: '100%',
+          }}
+        >
+          <div>
+            <h1 className="page-title">
+              学习统计
+            </h1>
+            <p style={{ fontSize: '14px', color: 'var(--ink-3)', marginTop: '4px' }}>
+              查看你的学习数据
+            </p>
+          </div>
+          <DataManager />
         </div>
 
         {!hasData ? (
@@ -501,6 +514,79 @@ function EmptyState({
         )}
         <ChevronRight size={16} strokeWidth={2.5} />
       </button>
+    </div>
+  )
+}
+
+/* ── 数据管理：导出 / 导入本地备份 ── */
+function DataManager() {
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [status, setStatus] = useState<string | null>(null)
+
+  const handleExport = () => {
+    const backup = exportAllData()
+    if (Object.keys(backup).length === 0) {
+      setStatus('当前没有可导出的数据')
+      return
+    }
+    const blob = new Blob([JSON.stringify(backup, null, 2)], {
+      type: 'application/json',
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `tiku-backup-${todayISO()}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    setStatus(`已导出 ${Object.keys(backup).length} 项数据`)
+  }
+
+  const handleImportFile = async (file: File) => {
+    try {
+      const text = await file.text()
+      const parsed = JSON.parse(text)
+      const count = importAllData(parsed)
+      setStatus(`已导入 ${count} 项数据，正在刷新…`)
+      setTimeout(() => window.location.reload(), 800)
+    } catch (err) {
+      setStatus(`导入失败：${err instanceof Error ? err.message : '文件格式无效'}`)
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+      <button
+        onClick={handleExport}
+        className="icon-btn"
+        aria-label="导出数据备份"
+        title="导出数据备份"
+      >
+        <Download size={17} strokeWidth={2} />
+      </button>
+      <button
+        onClick={() => fileRef.current?.click()}
+        className="icon-btn"
+        aria-label="导入数据备份"
+        title="导入数据备份"
+      >
+        <Upload size={17} strokeWidth={2} />
+      </button>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="application/json,.json"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file) void handleImportFile(file)
+          e.target.value = ''
+        }}
+      />
+      {status && (
+        <span style={{ fontSize: '11px', color: 'var(--ink-3)', maxWidth: '110px' }}>
+          {status}
+        </span>
+      )}
     </div>
   )
 }

@@ -24,28 +24,46 @@ function loadVersioned<T>(
   migrators: Migrators<T> = [],
 ): T | null {
   if (typeof window === 'undefined') return null
-  try {
-    const raw = window.localStorage.getItem(key)
-    if (!raw) return null
-    const parsed = JSON.parse(raw)
-    // 无 __v → 旧版数据（视为 v1），直接当 data 用
-    if (parsed && typeof parsed === 'object' && '__v' in parsed) {
-      const env = parsed as VersionedEnvelope<T>
-      let data = env.data
-      for (let v = env.__v; v < currentVersion; v++) {
-        const m = migrators[v - 1] // migrators[0] 升级 v1→v2
+  const parseRaw = (raw: string): T | null => {
+    try {
+      const parsed = JSON.parse(raw)
+      // 无 __v → 旧版数据（视为 v1），直接当 data 用
+      if (parsed && typeof parsed === 'object' && '__v' in parsed) {
+        const env = parsed as VersionedEnvelope<T>
+        let data = env.data
+        for (let v = env.__v; v < currentVersion; v++) {
+          const m = migrators[v - 1] // migrators[0] 升级 v1→v2
+          if (m) data = m(data)
+        }
+        return data
+      }
+      // 旧格式（无信封），按 v1 走迁移链
+      let data = parsed as T
+      for (let v = 1; v < currentVersion; v++) {
+        const m = migrators[v - 1]
         if (m) data = m(data)
       }
       return data
+    } catch {
+      return null
     }
-    // 旧格式（无信封），按 v1 走迁移链
-    let data = parsed as T
-    for (let v = 1; v < currentVersion; v++) {
-      const m = migrators[v - 1]
-      if (m) data = m(data)
+  }
+  try {
+    const raw = window.localStorage.getItem(key)
+    if (!raw) return null
+    const direct = parseRaw(raw)
+    if (direct !== null) return direct
+    // 主数据损坏：记录可检索信号，尝试从 .bak 副本恢复
+    console.warn(`[persistence] 数据损坏，尝试从备份恢复: ${key}`)
+    const backupRaw = window.localStorage.getItem(`${key}.bak`)
+    if (backupRaw) {
+      const recovered = parseRaw(backupRaw)
+      if (recovered !== null) return recovered
     }
-    return data
+    console.warn(`[persistence] 数据与备份均无法解析，已降级为默认值: ${key}`)
+    return null
   } catch {
+    console.warn(`[persistence] 读取失败: ${key}`)
     return null
   }
 }
@@ -53,10 +71,19 @@ function loadVersioned<T>(
 function saveVersioned<T>(key: string, data: T, version: number): void {
   if (typeof window === 'undefined') return
   try {
+    // 写入前把当前值备份到 <key>.bak（覆盖式备份，配额友好）
+    const current = window.localStorage.getItem(key)
+    if (current !== null) {
+      try {
+        window.localStorage.setItem(`${key}.bak`, current)
+      } catch {
+        // 备份失败不阻断主写入
+      }
+    }
     const env: VersionedEnvelope<T> = { __v: version, data }
     window.localStorage.setItem(key, JSON.stringify(env))
   } catch {
-    // ignore quota / serialization errors
+    console.warn(`[persistence] 写入失败（可能是存储空间不足）: ${key}`)
   }
 }
 
@@ -318,6 +345,52 @@ export function clearChatHistory(): void {
   try {
     window.localStorage.removeItem(CHAT_HISTORY_KEY)
   } catch {
-    // ignore
+    console.warn(`[persistence] 清除聊天记录失败: ${CHAT_HISTORY_KEY}`)
   }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Backup / Restore (localStorage)
+   导出全部 tiku.* 数据为 JSON 备份；导入时校验并写回。
+   ═══════════════════════════════════════════════════════════ */
+
+const TIKU_PREFIX = 'tiku.'
+
+/** 导出全部应用数据：{ key: 原始信封 JSON 字符串 }，不含 .bak 副本 */
+export function exportAllData(): Record<string, string> {
+  if (typeof window === 'undefined') return {}
+  const out: Record<string, string> = {}
+  try {
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i)
+      if (!key || !key.startsWith(TIKU_PREFIX) || key.endsWith('.bak')) continue
+      const raw = window.localStorage.getItem(key)
+      if (raw !== null) out[key] = raw
+    }
+  } catch (err) {
+    console.warn('[persistence] 导出失败:', err)
+  }
+  return out
+}
+
+/** 导入备份数据：校验对象形状后写回；返回导入的 key 数量 */
+export function importAllData(backup: unknown): number {
+  if (typeof window === 'undefined') return 0
+  if (!backup || typeof backup !== 'object' || Array.isArray(backup)) {
+    throw new Error('备份文件格式无效：应为 JSON 对象')
+  }
+  let count = 0
+  for (const [key, value] of Object.entries(backup as Record<string, unknown>)) {
+    if (!key.startsWith(TIKU_PREFIX) || key.endsWith('.bak')) continue
+    if (typeof value !== 'string') continue
+    // 写回前校验可解析，避免导入损坏数据
+    try {
+      JSON.parse(value)
+    } catch {
+      throw new Error(`备份文件中 ${key} 不是有效 JSON，已中止导入`)
+    }
+    window.localStorage.setItem(key, value)
+    count++
+  }
+  return count
 }

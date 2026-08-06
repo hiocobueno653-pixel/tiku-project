@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest'
 import {
   appendDailyPractice,
   clearChatHistory,
+  exportAllData,
+  importAllData,
   loadChatHistory,
   loadDailyPracticeRecords,
+  loadLearningStats,
   loadUserQuestions,
   localDateISO,
   saveChatHistory,
@@ -109,5 +112,65 @@ describe('chat history persistence', () => {
     saveChatHistory([{ id: 'm1', role: 'user', content: 'hi', ts: 1 }])
     clearChatHistory()
     expect(loadChatHistory()).toEqual([])
+  })
+})
+
+describe('backup / restore', () => {
+  it('exports and imports all app data', () => {
+    saveUserQuestions([makeQuestion('Q.001')])
+    saveChatHistory([{ id: 'm1', role: 'user', content: 'hi', ts: 1 }])
+
+    const backup = exportAllData()
+    expect(Object.keys(backup).sort()).toEqual([
+      'tiku.chatHistory.v1',
+      'tiku.userQuestions.v1',
+    ])
+
+    // 清空后导入恢复
+    window.localStorage.clear()
+    expect(loadUserQuestions()).toEqual([])
+    const count = importAllData(backup)
+    expect(count).toBe(2)
+    expect(loadUserQuestions()).toEqual([makeQuestion('Q.001')])
+    expect(loadChatHistory()).toEqual([{ id: 'm1', role: 'user', content: 'hi', ts: 1 }])
+  })
+
+  it('rejects non-object backups', () => {
+    expect(() => importAllData(null)).toThrow()
+    expect(() => importAllData([1, 2])).toThrow()
+  })
+
+  it('rejects backups containing invalid JSON values', () => {
+    expect(() => importAllData({ 'tiku.userQuestions.v1': '{broken' })).toThrow()
+  })
+
+  it('excludes .bak keys from export', () => {
+    saveUserQuestions([makeQuestion('Q.001')])
+    window.localStorage.setItem('tiku.userQuestions.v1.bak', '{"__v":1,"data":[]}')
+
+    const backup = exportAllData()
+    expect(Object.keys(backup)).not.toContain('tiku.userQuestions.v1.bak')
+  })
+})
+
+describe('corrupted data recovery', () => {
+  it('recovers from the .bak copy when the primary value is corrupted', () => {
+    saveUserQuestions([makeQuestion('Q.001')])
+    // 第二次保存会先把当前值（Q.001 版本）备份到 .bak
+    saveUserQuestions([makeQuestion('Q.002')])
+    expect(window.localStorage.getItem('tiku.userQuestions.v1.bak')).not.toBeNull()
+
+    // 主数据损坏，备份完好
+    window.localStorage.setItem('tiku.userQuestions.v1', '{broken json')
+
+    expect(loadUserQuestions()).toEqual([makeQuestion('Q.001')])
+  })
+
+  it('falls back to defaults when both primary and backup are corrupted', () => {
+    window.localStorage.setItem('tiku.learningStats.v1', 'not-json')
+    window.localStorage.setItem('tiku.learningStats.v1.bak', 'also-not-json')
+
+    const stats = loadLearningStats()
+    expect(stats.totalAnswered).toBe(0)
   })
 })

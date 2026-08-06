@@ -28,6 +28,9 @@ hs_err_pid*.log
 .codex/
 claude-md/
 
+# Design source exports (intermediate HTML, tracked by DESIGN.md contract instead)
+.design-source/
+
 # Local installers
 *.apk
 *.aab

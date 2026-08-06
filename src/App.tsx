@@ -7,9 +7,14 @@ import PracticeSetup from './pages/PracticeSetup'
 import PracticeSession from './pages/PracticeSession'
 import Statistics from './pages/Statistics'
 import BottomNav from './components/BottomNav'
+import ErrorBoundary from './components/ErrorBoundary'
 
 export default function App() {
-  return <AppLayout />
+  return (
+    <ErrorBoundary>
+      <AppLayout />
+    </ErrorBoundary>
+  )
 }
 
 /**

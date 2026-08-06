@@ -1,0 +1,4 @@
+#!/bin/sh
+# 推送前校验：测试 + 构建。失败时 git 会拒绝推送。
+cd "$(dirname "$0")/../.." || exit 1
+node scripts/pre-push-check.mjs || exit 1

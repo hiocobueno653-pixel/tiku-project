@@ -62,3 +62,40 @@ export function fillDailyRecords(
   }
   return result
 }
+
+/** 周视图单日状态 */
+export interface WeekDayView {
+  day: string
+  state: 'filled' | 'current' | 'empty'
+  label: string
+}
+
+/**
+ * 基于连续打卡天数构建本周（周一为一周起点）打卡视图。
+ * 只把过去且距今不超过 streakDays-1 天的日期标记为 filled；
+ * 未来日期永远不会被标记为已打卡。
+ * @param streakDays 连续打卡天数（≥0）
+ * @param today 参考日期（默认当天，便于测试注入）
+ */
+export function buildWeekView(streakDays: number, today: Date = new Date()): WeekDayView[] {
+  const dayNames = ['日', '一', '二', '三', '四', '五', '六']
+  const todayIdx = today.getDay()
+  // 今天相对本周一（周一为一周起点）的天数：周日=6，周一=0 ... 周六=5
+  const mondayOffset = (todayIdx + 6) % 7
+  // 周一开始：调整顺序为 一/二/三/四/五/六/日
+  const order = [1, 2, 3, 4, 5, 6, 0]
+  return order.map((dow) => {
+    const isToday = dow === todayIdx
+    // 该天在本周相对周一的位置（周一=0 ... 周日=6）
+    const dayOffset = dow === 0 ? 6 : dow - 1
+    // 该天相对今天的天数：负数=过去，0=今天，正数=未来（本周剩余）
+    const diff = dayOffset - mondayOffset
+    // 连续打卡覆盖：仅当该天在过去 且 距今不超过 streakDays-1 天时视为已打卡
+    const filled = !isToday && diff >= -(streakDays - 1) && diff < 0 && streakDays > 0
+    return {
+      day: dayNames[dow],
+      state: isToday ? 'current' : filled ? 'filled' : 'empty',
+      label: isToday ? '今日' : dayNames[dow],
+    }
+  })
+}
