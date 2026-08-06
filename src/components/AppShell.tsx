@@ -1,11 +1,10 @@
 import type { ReactNode } from 'react'
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import BottomNav from './BottomNav'
 
 interface AppShellProps {
   children: ReactNode
-  /** When true (e.g. during practice session), hide the bottom nav. */
+  /** When true (e.g. during practice session), remove bottom-nav bottom padding. */
   hideNav?: boolean
 }
 
@@ -18,9 +17,9 @@ export default function AppShell({ children, hideNav = false }: AppShellProps) {
   }, [pathname])
 
   return (
-    <>
-      <div className={`app-shell screen-enter${hideNav ? ' no-nav' : ''}`}>{children}</div>
-      {!hideNav && <BottomNav />}
-    </>
+    <div className={`app-shell screen-enter${hideNav ? ' no-nav' : ''}`}>
+      {/* 内容容器：flex:1 撑满视口剩余高度，空状态时导航栏独立显示在视口底部 */}
+      <div className="app-content">{children}</div>
+    </div>
   )
 }

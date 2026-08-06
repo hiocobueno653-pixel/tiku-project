@@ -16,7 +16,8 @@ import { Line, Bar, Doughnut } from 'react-chartjs-2'
 import { BarChart3, Sparkles, ChevronRight, Library, Zap } from 'lucide-react'
 import AppShell from '../components/AppShell'
 import { useAppStore } from '../store/useAppStore'
-import { computeSubjectCounts, SUBJECT_COLORS } from '../data/questions'
+import { computeSubjectCounts, fillDailyRecords } from '../data/stats'
+import { SUBJECT_COLORS } from '../data/sample-data'
 
 ChartJS.register(
   CategoryScale,
@@ -48,19 +49,18 @@ export default function Statistics() {
 
   // 按周期筛选每日记录
   const filteredRecords = useMemo(() => {
-    if (period === 'week') return dailyRecords.slice(-7)
-    if (period === 'month') return dailyRecords.slice(-30)
-    return dailyRecords
+    if (period === 'week') return fillDailyRecords(dailyRecords, 7)
+    if (period === 'month') return fillDailyRecords(dailyRecords, 30)
+    return [...dailyRecords].sort((a, b) => a.date.localeCompare(b.date))
   }, [dailyRecords, period])
 
   const periodLabels = useMemo(() => {
     return filteredRecords.map((r) => {
       const d = new Date(r.date)
+      // 非法日期守卫：localStorage 中损坏的 date 字符串不产生 NaN 图表标签
+      if (Number.isNaN(d.getTime())) return '?'
       if (period === 'week') {
         return ['日', '一', '二', '三', '四', '五', '六'][d.getDay()]
-      }
-      if (period === 'month') {
-        return `${d.getMonth() + 1}/${d.getDate()}`
       }
       return `${d.getMonth() + 1}/${d.getDate()}`
     })
@@ -176,7 +176,7 @@ export default function Statistics() {
 
   return (
     <AppShell>
-      <div className="screen-header screen-header-stacked" style={{ paddingBottom: 24 }}>
+      <div className="screen-header screen-header-stacked" style={{ flex: 1 }}>
         {/* Header */}
         <div className="mb-6">
           <h1 className="page-title">
@@ -188,12 +188,22 @@ export default function Statistics() {
         </div>
 
         {!hasData ? (
-          /* ── 空状态 ── */
-          <EmptyState
-            hasQuestions={userQuestions.length > 0}
-            onGoPractice={() => navigate('/practice-setup')}
-            onGoQuestionBank={() => navigate('/question-bank')}
-          />
+          /* ── 空状态：整组在标题与底部导航栏之间的剩余空间垂直居中 ── */
+          <div
+            style={{
+              flex: 1,
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+            }}
+          >
+            <EmptyState
+              hasQuestions={userQuestions.length > 0}
+              onGoPractice={() => navigate('/practice-setup')}
+              onGoQuestionBank={() => navigate('/question-bank')}
+            />
+          </div>
         ) : (
           <>
             {/* Period Selector */}
@@ -235,50 +245,16 @@ export default function Statistics() {
             </div>
 
             {/* Learning Curve Chart */}
-            <div
-              style={{
-                background: 'var(--surface)',
-                borderRadius: 'var(--radius-lg)',
-                padding: '16px',
-                marginBottom: '16px',
-                boxShadow: 'var(--shadow-2)',
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  color: 'var(--ink)',
-                  marginBottom: '12px',
-                }}
-              >
-                做题量趋势
-              </h2>
+            <div className="chart-card">
+              <h2 className="chart-card-title">做题量趋势</h2>
               <div style={{ position: 'relative', width: '100%', height: '200px' }}>
                 <Line data={trendData} options={trendOptions} />
               </div>
             </div>
 
             {/* Accuracy Chart */}
-            <div
-              style={{
-                background: 'var(--surface)',
-                borderRadius: 'var(--radius-lg)',
-                padding: '16px',
-                marginBottom: '16px',
-                boxShadow: 'var(--shadow-2)',
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  color: 'var(--ink)',
-                  marginBottom: '12px',
-                }}
-              >
-                正确率趋势
-              </h2>
+            <div className="chart-card">
+              <h2 className="chart-card-title">正确率趋势</h2>
               <div style={{ position: 'relative', width: '100%', height: '200px' }}>
                 <Bar data={accuracyData} options={accuracyOptions} />
               </div>
@@ -286,25 +262,8 @@ export default function Statistics() {
 
             {/* Subject Distribution — 仅当有题库时显示 */}
             {userQuestions.length > 0 && (
-              <div
-                style={{
-                  background: 'var(--surface)',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: '16px',
-                  marginBottom: '16px',
-                  boxShadow: 'var(--shadow-2)',
-                }}
-              >
-                <h2
-                  style={{
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: 'var(--ink)',
-                    marginBottom: '12px',
-                  }}
-                >
-                  题库科目分布
-                </h2>
+              <div className="chart-card">
+                <h2 className="chart-card-title">题库科目分布</h2>
                 <div style={{ position: 'relative', width: '100%', height: '180px' }}>
                   <Doughnut data={subjectData} options={subjectOptions} />
                 </div>
@@ -373,24 +332,8 @@ export default function Statistics() {
 
             {/* Recent Activities — 真实记录 */}
             {activities.length > 0 && (
-              <div
-                style={{
-                  background: 'var(--surface)',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: '16px',
-                  boxShadow: 'var(--shadow-2)',
-                }}
-              >
-                <h2
-                  style={{
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: 'var(--ink)',
-                    marginBottom: '12px',
-                  }}
-                >
-                  最近练习
-                </h2>
+              <div className="chart-card">
+                <h2 className="chart-card-title">最近练习</h2>
                 <div className="flex flex-col gap-2">
                   {activities.slice(0, 5).map((a) => (
                     <div
@@ -460,7 +403,7 @@ function SummaryCard({
         borderRadius: 'var(--radius-md)',
         padding: '14px 8px',
         textAlign: 'center',
-        boxShadow: 'var(--shadow-2)',
+        boxShadow: 'var(--inner-hl), var(--shadow-2)',
       }}
     >
       <p style={{ fontSize: '11px', color: 'var(--ink-3)', marginBottom: '4px' }}>{label}</p>

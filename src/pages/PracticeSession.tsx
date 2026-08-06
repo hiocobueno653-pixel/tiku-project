@@ -3,13 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { X, Clock, SkipForward, Check, ChevronRight, RotateCcw, Library } from 'lucide-react'
 import AppShell from '../components/AppShell'
 import { useAppStore } from '../store/useAppStore'
-import {
-  appendRecentActivity,
-  difficultyLabel,
-  type Question,
-  type Difficulty,
-  type SubjectId,
-} from '../data/questions'
+import { appendRecentActivity } from '../data/persistence'
+import { difficultyLabel } from '../data/sample-data'
+import type { Question, Difficulty, SubjectId } from '../data/types'
 
 type Phase = 'answering' | 'feedback' | 'finished'
 
@@ -259,69 +255,20 @@ export default function PracticeSession() {
         </div>
 
         {/* Progress Bar */}
-        <div
-          style={{
-            width: '100%',
-            height: '4px',
-            background: 'var(--surface-2)',
-            borderRadius: '2px',
-            marginBottom: '20px',
-            overflow: 'hidden',
-          }}
-        >
-          <div
-            style={{
-              width: `${progressPct}%`,
-              height: '100%',
-              background: 'var(--brand)',
-              borderRadius: '2px',
-              transition: 'width 0.3s ease',
-            }}
-          />
+        <div className="session-progress">
+          <div className="session-progress-fill" style={{ width: `${progressPct}%` }} />
         </div>
 
         {/* Timer */}
         {timed && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              background: 'var(--surface-2)',
-              borderRadius: 'var(--radius-full)',
-              padding: '4px 12px',
-              width: 'fit-content',
-              marginLeft: 'auto',
-              marginRight: 'auto',
-              marginBottom: '24px',
-            }}
-          >
+          <div className="session-timer">
             <Clock size={14} color="var(--ink-2)" strokeWidth={2} />
-            <span
-              style={{
-                fontSize: '13px',
-                fontWeight: 500,
-                color: 'var(--ink-2)',
-                fontVariantNumeric: 'tabular-nums',
-              }}
-            >
-              {formatTime(elapsed)}
-            </span>
+            <span>{formatTime(elapsed)}</span>
           </div>
         )}
 
         {/* Question Card */}
-        <div
-          style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--line)',
-            borderRadius: 'var(--radius-lg)',
-            boxShadow: 'var(--shadow-2)',
-            padding: '24px',
-            marginBottom: '20px',
-          }}
-        >
+        <div className="session-question-card">
           <div className="flex items-center gap-2 mb-3 flex-wrap">
             <span
               style={{
@@ -367,80 +314,20 @@ export default function PracticeSession() {
             const isCorrect = phase === 'feedback' && opt.key === current.answer
             const isWrong = phase === 'feedback' && isSelected && opt.key !== current.answer
 
-            let bg = 'var(--surface)'
-            let border = '1px solid var(--line)'
-            let labelBg = 'var(--surface-2)'
-            let labelColor = 'var(--ink-2)'
-            let labelFontWeight = 600
-            let textColor = 'var(--ink)'
-            let textFontWeight = 500
-
-            if (isSelected && phase === 'answering') {
-              bg = 'var(--brand-8)'
-              border = `1px solid var(--brand)`
-              labelBg = 'var(--brand)'
-              labelColor = '#FFFFFF'
-              textColor = 'var(--brand)'
-              textFontWeight = 600
-            } else if (isCorrect) {
-              bg = 'rgba(22, 163, 74, 0.08)'
-              border = `1px solid var(--state-success)`
-              labelBg = 'var(--state-success)'
-              labelColor = '#FFFFFF'
-              textColor = 'var(--state-success)'
-              textFontWeight = 600
-            } else if (isWrong) {
-              bg = 'rgba(220, 38, 38, 0.08)'
-              border = `1px solid var(--state-error)`
-              labelBg = 'var(--state-error)'
-              labelColor = '#FFFFFF'
-              textColor = 'var(--state-error)'
-              textFontWeight = 600
-            }
+            const stateClass = isCorrect ? ' correct' : isWrong ? ' wrong' : ''
+            const selectedClass = isSelected && phase === 'answering' ? ' selected' : ''
 
             return (
               <button
                 key={opt.key}
                 onClick={() => phase === 'answering' && setSelected(opt.key)}
                 disabled={phase === 'feedback'}
-                style={{
-                  width: '100%',
-                  background: bg,
-                  border,
-                  borderRadius: 'var(--radius-md)',
-                  padding: '14px 16px',
-                  cursor: phase === 'answering' ? 'pointer' : 'default',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  textAlign: 'left',
-                  transition: 'all 0.2s ease',
-                }}
+                className={`session-option${selectedClass}${stateClass}`}
               >
-                <span
-                  style={{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: 'var(--radius-full)',
-                    background: labelBg,
-                    fontSize: '13px',
-                    fontWeight: labelFontWeight,
-                    color: labelColor,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
+                <span className="session-option-badge">
                   {isCorrect ? <Check size={14} strokeWidth={3} /> : opt.key}
                 </span>
-                <span
-                  style={{
-                    fontSize: '14px',
-                    fontWeight: textFontWeight,
-                    color: textColor,
-                  }}
-                >
+                <span className="session-option-text">
                   {opt.text}
                 </span>
               </button>
@@ -691,7 +578,7 @@ function ResultStat({ value, label, color }: { value: string; label: string; col
         background: 'var(--surface)',
         border: '1px solid var(--line)',
         borderRadius: 'var(--radius-md)',
-        boxShadow: 'var(--shadow-1)',
+        boxShadow: 'var(--inner-hl), var(--shadow-1)',
         padding: '16px 8px',
         textAlign: 'center',
       }}

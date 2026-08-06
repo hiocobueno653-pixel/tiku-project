@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import AppShell from '../components/AppShell'
 import { useAppStore } from '../store/useAppStore'
-import { todayISO } from '../data/questions'
+import { todayISO } from '../data/persistence'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -53,21 +53,6 @@ export default function Home() {
           <p className="page-subtitle">
             {hasQuestions ? '今天也要加油哦' : '先去题库添加题目吧'}
           </p>
-        </div>
-        <div
-          style={{
-            width: '52px',
-            height: '52px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #2F6BFF 0%, #5B8CFF 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            boxShadow: '0 8px 20px -6px rgba(47, 107, 255, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.4)',
-          }}
-        >
-          <span style={{ color: '#fff', fontSize: '19px', fontWeight: 600 }}>我</span>
         </div>
       </div>
 
@@ -198,71 +183,27 @@ export default function Home() {
 
         {!hasActivities && (
           <div
+            className="empty-state"
             style={{
-              textAlign: 'center',
-              padding: '36px 20px',
               background: 'var(--surface)',
               border: '1px dashed var(--line)',
               borderRadius: 'var(--radius-xl)',
-              position: 'relative',
-              overflow: 'hidden',
+              boxShadow: 'var(--inner-hl), var(--shadow-1)',
             }}
           >
-            <div
-              style={{
-                width: '56px',
-                height: '56px',
-                margin: '0 auto 12px',
-                borderRadius: '16px',
-                background:
-                  'var(--brand-8)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                zIndex: 1,
-              }}
-            >
+            <div className="empty-state-icon" style={{ position: 'relative', zIndex: 1 }}>
               <Zap size={26} color="var(--brand)" strokeWidth={2} />
             </div>
-            <p
-              style={{
-                fontSize: '15px',
-                color: 'var(--ink)',
-                margin: '0 0 4px',
-                fontWeight: 600,
-                position: 'relative',
-                zIndex: 1,
-              }}
-            >
+            <p className="empty-state-title" style={{ position: 'relative', zIndex: 1 }}>
               还没有练习记录
             </p>
-            <p
-              style={{
-                fontSize: '12px',
-                color: 'var(--ink-3)',
-                margin: '0 0 16px',
-                position: 'relative',
-                zIndex: 1,
-              }}
-            >
+            <p className="empty-state-desc" style={{ position: 'relative', zIndex: 1 }}>
               开始第一次练习，开启你的进步之旅
             </p>
             <button
               onClick={() => navigate(hasQuestions ? '/practice-setup' : '/question-bank')}
-              style={{
-                padding: '10px 24px',
-                background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-light) 100%)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 'var(--radius-full)',
-                fontSize: '13px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                boxShadow: '0 6px 16px -4px rgba(47, 107, 255, 0.4)',
-                position: 'relative',
-                zIndex: 1,
-              }}
+              className="empty-state-cta"
+              style={{ position: 'relative', zIndex: 1 }}
             >
               {hasQuestions ? '去练习' : '先去添加题目'}
             </button>
@@ -272,55 +213,27 @@ export default function Home() {
         {activities.slice(0, 5).map((a, i) => (
           <div
             key={a.id}
+            className="activity-row"
             style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--line)',
-              borderRadius: 'var(--radius-md)',
-              padding: '14px 16px',
               marginBottom: i === Math.min(activities.length, 5) - 1 ? 0 : '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              boxShadow: 'var(--shadow-1)',
             }}
           >
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="flex items-center gap-2">
-                <span
-                  style={{
-                    fontSize: '15px',
-                    fontWeight: 500,
-                    color: 'var(--ink)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
+                <span className="activity-row-title">
                   {a.title}
                 </span>
                 {a.completed && (
                   <CheckCircle2 size={16} color="var(--state-success)" strokeWidth={2} />
                 )}
               </div>
-              <span
-                style={{
-                  fontSize: '12px',
-                  color: 'var(--ink-2)',
-                  marginTop: '2px',
-                  display: 'block',
-                }}
-              >
+              <span className="activity-row-time">
                 {a.time}
               </span>
             </div>
             <span
-              style={{
-                fontSize: '16px',
-                fontWeight: 600,
-                color: a.score >= 90 ? 'var(--state-success)' : 'var(--brand)',
-                flexShrink: 0,
-                marginLeft: '12px',
-              }}
+              className="activity-row-score"
+              style={{ color: a.score >= 90 ? 'var(--state-success)' : 'var(--brand)' }}
             >
               {a.score}分
             </span>
@@ -378,21 +291,11 @@ function StatCard({
   color: string
 }) {
   return (
-    <div
-      style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--line)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '18px 8px',
-        textAlign: 'center',
-        boxShadow: 'var(--shadow-2)',
-        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-      }}
-    >
-      <div style={{ fontSize: '26px', fontWeight: 700, color, lineHeight: 1.15, letterSpacing: 0 }}>
+    <div className="stat-card">
+      <div className="stat-card-value" style={{ color }}>
         {value}
       </div>
-      <div style={{ fontSize: '12px', color: 'var(--ink-2)', marginTop: '5px', fontWeight: 500 }}>
+      <div className="stat-card-label">
         {label}
       </div>
     </div>
@@ -417,33 +320,19 @@ function RecommendCard({
   return (
     <button
       onClick={onClick}
-      style={{
-        flex: '0 0 auto',
-        width: 'calc(50% - 6px)',
-        background: gradient
-          ? 'linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)'
-          : 'var(--surface)',
-        border: '1px solid var(--line)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '20px 16px',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        minHeight: '124px',
-        borderLeft,
-        cursor: 'pointer',
-        textAlign: 'left',
-        color: 'inherit',
-        boxShadow: 'var(--shadow-2)',
-      }}
+      className={`recommend-card${gradient ? ' gradient' : ''}`}
+      style={{ borderLeft }}
     >
-      <div>
+      <div style={{ position: 'relative', zIndex: 1 }}>
         <div className="flex items-center gap-2 mb-2">
-          {icon}
-          <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--ink)' }}>{title}</span>
+          <span className="recommend-card-icon">{icon}</span>
+          <span className="recommend-card-title">{title}</span>
         </div>
-        <p style={{ fontSize: '12px', color: 'var(--ink-2)', margin: 0, lineHeight: 1.5 }}>{desc}</p>
+        <p className="recommend-card-desc">{desc}</p>
       </div>
+      <span className="recommend-arrow">
+        <ChevronRight size={14} strokeWidth={2.5} />
+      </span>
     </button>
   )
 }

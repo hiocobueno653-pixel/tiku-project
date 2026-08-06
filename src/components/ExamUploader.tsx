@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   X,
   Upload,
@@ -21,12 +21,11 @@ import {
   pdfToImages,
   fileToDataUrl,
   fileToText,
-  AI_PROVIDER_PRESETS,
-  type AiApiConfig,
-  type ParsedQuestion,
-  type SubjectId,
-  type Difficulty,
-} from '../data/questions'
+} from '../data/exam-parser'
+import { AI_PROVIDER_PRESETS } from '../data/ai-config'
+import type { AiApiConfig, ParsedQuestion, SubjectId, Difficulty } from '../data/types'
+import BottomSheet from './BottomSheet'
+import { compactInputStyle } from './ui'
 import { takePhoto, pickPhotos } from '../services/camera'
 
 type Stage = 'input' | 'parsing' | 'review' | 'done'
@@ -40,6 +39,11 @@ interface PendingFile {
   previewUrl?: string
   // 原生相机/相册返回的 dataURL（Web file fallback 时为空，由 file 字段读取）
   dataUrl?: string
+}
+
+/** 审阅列表项：带稳定 key，避免删除中间项后展开态与卡片错位 */
+interface ReviewItem extends ParsedQuestion {
+  _key: string
 }
 
 const ACCEPTED_IMAGE = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/jpg']
@@ -73,17 +77,27 @@ export default function ExamUploader({
   const [stage, setStage] = useState<Stage>('input')
   const [files, setFiles] = useState<PendingFile[]>([])
   const [text, setText] = useState('')
-  const [parsed, setParsed] = useState<ParsedQuestion[]>([])
+  const [parsed, setParsed] = useState<ReviewItem[]>([])
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [progress, setProgress] = useState<{ current: number; total: number; label: string }>({
     current: 0,
     total: 0,
     label: '',
   })
-  const [expandedIdx, setExpandedIdx] = useState<number | null>(null)
+  const [expandedKey, setExpandedKey] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'camera' | 'file' | 'text'>('camera')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
+  // 追踪所有 blob URL，组件卸载时统一释放，防止内存泄漏
+  const blobUrlsRef = useRef<Set<string>>(new Set())
+
+  // 卸载时释放所有尚未 revoke 的 blob URL
+  useEffect(() => {
+    return () => {
+      blobUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
+      blobUrlsRef.current.clear()
+    }
+  }, [])
 
   const isConfigured = !!(aiConfig && aiConfig.apiKey && aiConfig.model)
 
@@ -102,19 +116,34 @@ export default function ExamUploader({
 
   const handleFileSelect = (selected: FileList | null) => {
     if (!selected) return
-    const newFiles: PendingFile[] = Array.from(selected)
-      .filter((f) => f.size < 20 * 1024 * 1024) // 单文件最大 20MB
-      .map((f) => ({
+    const MAX_SIZE = 20 * 1024 * 1024 // 单文件最大 20MB
+    const rejected: string[] = []
+    const accepted: File[] = []
+    Array.from(selected).forEach((f) => {
+      if (f.size >= MAX_SIZE) rejected.push(f.name)
+      else accepted.push(f)
+    })
+    if (rejected.length > 0) {
+      setErrorMsg(`以下文件超过 20MB 限制，已忽略：${rejected.slice(0, 3).join('、')}${rejected.length > 3 ? ' 等' : ''}`)
+    }
+    const newFiles: PendingFile[] = accepted.map((f) => {
+      const type = detectType(f)
+      let previewUrl: string | undefined
+      if (type === 'image') {
+        previewUrl = URL.createObjectURL(f)
+        blobUrlsRef.current.add(previewUrl)
+      }
+      return {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         name: f.name,
-        type: detectType(f),
+        type,
         size: f.size,
         file: f,
-        previewUrl:
-          detectType(f) === 'image' ? URL.createObjectURL(f) : undefined,
-      }))
+        previewUrl,
+      }
+    })
     setFiles((prev) => [...prev, ...newFiles])
-    setErrorMsg(null)
+    setErrorMsg((prev) => prev ?? null)
   }
 
   // 原生相机拍照
@@ -163,6 +192,7 @@ export default function ExamUploader({
       // 仅 revoke 通过 URL.createObjectURL 创建的 blob URL；dataUrl 不需要 revoke
       if (target?.previewUrl && target.previewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(target.previewUrl)
+        blobUrlsRef.current.delete(target.previewUrl)
       }
       return prev.filter((f) => f.id !== id)
     })
@@ -261,7 +291,12 @@ export default function ExamUploader({
         return
       }
 
-      setParsed(result.questions)
+      setParsed(
+        result.questions.map((q) => ({
+          ...q,
+          _key: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        })),
+      )
       setStage('review')
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err)
@@ -270,14 +305,12 @@ export default function ExamUploader({
     }
   }
 
-  const updateParsed = (idx: number, patch: Partial<ParsedQuestion>) => {
-    setParsed((prev) =>
-      prev.map((p, i) => (i === idx ? { ...p, ...patch } : p)),
-    )
+  const updateParsed = (key: string, patch: Partial<ParsedQuestion>) => {
+    setParsed((prev) => prev.map((p) => (p._key === key ? { ...p, ...patch } : p)))
   }
 
-  const removeParsed = (idx: number) => {
-    setParsed((prev) => prev.filter((_, i) => i !== idx))
+  const removeParsed = (key: string) => {
+    setParsed((prev) => prev.filter((p) => p._key !== key))
   }
 
   const handleConfirmImport = () => {
@@ -287,97 +320,12 @@ export default function ExamUploader({
   }
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(15, 23, 42, 0.55)',
-        zIndex: 2000,
-        display: 'flex',
-        alignItems: 'flex-end',
-        justifyContent: 'center',
-        maxWidth: '28rem',
-        margin: '0 auto',
-        backdropFilter: 'blur(4px)',
-        WebkitBackdropFilter: 'blur(4px)',
-      }}
+    <BottomSheet
+      title="上传试卷"
+      icon={<Upload size={16} color="var(--brand)" strokeWidth={2.2} />}
+      onClose={onClose}
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="animate-fade-in-up"
-        style={{
-          width: '100%',
-          maxHeight: '94vh',
-          overflowY: 'auto',
-          background: 'var(--surface)',
-          borderRadius: '24px 24px 0 0',
-          padding: '0 16px calc(20px + env(safe-area-inset-bottom, 0px))',
-          boxShadow: '0 -8px 32px -8px rgba(15, 23, 42, 0.25)',
-        }}
-      >
-        {/* ── Grabber Bar ── 原生 app 风格的顶部小拖动条 */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: '10px 0 6px',
-            cursor: 'grab',
-          }}
-        >
-          <div
-            style={{
-              width: '36px',
-              height: '4px',
-              borderRadius: '999px',
-              background: 'var(--surface-3)',
-              flexShrink: 0,
-            }}
-          />
-        </div>
-
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div
-              style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '8px',
-                background: 'var(--brand-8)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Upload size={16} color="var(--brand)" strokeWidth={2.2} />
-            </div>
-            <h2 style={{ fontSize: '17px', fontWeight: 600, color: 'var(--ink)', margin: 0 }}>
-              上传试卷
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="关闭"
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              background: 'var(--surface-2)',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--ink-2)',
-            }}
-          >
-            <X size={18} strokeWidth={2} />
-          </button>
-        </div>
-
-        {/* API 未配置提示 */}
+      {/* API 未配置提示 */}
         {!isConfigured && (
           <div
             onClick={onOpenSettings}
@@ -639,8 +587,10 @@ export default function ExamUploader({
                   <button
                     onClick={() => {
                       files.forEach((f) => {
-                        if (f.previewUrl?.startsWith('blob:'))
+                        if (f.previewUrl?.startsWith('blob:')) {
                           URL.revokeObjectURL(f.previewUrl)
+                          blobUrlsRef.current.delete(f.previewUrl)
+                        }
                       })
                       setFiles([])
                     }}
@@ -872,13 +822,13 @@ export default function ExamUploader({
             <div style={{ marginBottom: '16px' }}>
               {parsed.map((q, idx) => (
                 <ParsedQuestionCard
-                  key={idx}
+                  key={q._key}
                   idx={idx}
                   q={q}
-                  expanded={expandedIdx === idx}
-                  onToggle={() => setExpandedIdx(expandedIdx === idx ? null : idx)}
-                  onUpdate={(patch) => updateParsed(idx, patch)}
-                  onRemove={() => removeParsed(idx)}
+                  expanded={expandedKey === q._key}
+                  onToggle={() => setExpandedKey(expandedKey === q._key ? null : q._key)}
+                  onUpdate={(patch) => updateParsed(q._key, patch)}
+                  onRemove={() => removeParsed(q._key)}
                 />
               ))}
             </div>
@@ -967,8 +917,7 @@ export default function ExamUploader({
             </button>
           </div>
         )}
-      </div>
-    </div>
+    </BottomSheet>
   )
 }
 
@@ -1177,7 +1126,7 @@ function ParsedQuestionCard({
               value={q.content}
               onChange={(e) => onUpdate({ content: e.target.value })}
               rows={3}
-              style={{ ...inputStyle, resize: 'vertical', minHeight: '70px' }}
+              style={{ ...compactInputStyle, resize: 'vertical', minHeight: '70px' }}
             />
           </div>
 
@@ -1188,7 +1137,7 @@ function ParsedQuestionCard({
               <select
                 value={q.subject}
                 onChange={(e) => onUpdate({ subject: e.target.value as SubjectId })}
-                style={inputStyle}
+                style={compactInputStyle}
               >
                 {Object.entries(SUBJECT_LABELS).map(([id, name]) => (
                   <option key={id} value={id}>
@@ -1202,7 +1151,7 @@ function ParsedQuestionCard({
               <select
                 value={q.difficulty}
                 onChange={(e) => onUpdate({ difficulty: e.target.value as Difficulty })}
-                style={inputStyle}
+                style={compactInputStyle}
               >
                 {Object.entries(DIFFICULTY_LABELS).map(([id, name]) => (
                   <option key={id} value={id}>
@@ -1220,7 +1169,7 @@ function ParsedQuestionCard({
               type="text"
               value={q.category}
               onChange={(e) => onUpdate({ category: e.target.value })}
-              style={inputStyle}
+              style={compactInputStyle}
             />
           </div>
 
@@ -1258,7 +1207,7 @@ function ParsedQuestionCard({
                         next[i] = { ...opt, text: e.target.value }
                         onUpdate({ options: next })
                       }}
-                      style={{ ...inputStyle, flex: 1, padding: '6px 10px', fontSize: '13px' }}
+                      style={{ ...compactInputStyle, flex: 1, padding: '6px 10px', fontSize: '13px' }}
                     />
                   </div>
                 )
@@ -1273,7 +1222,7 @@ function ParsedQuestionCard({
               value={q.explanation}
               onChange={(e) => onUpdate({ explanation: e.target.value })}
               rows={2}
-              style={{ ...inputStyle, resize: 'vertical', minHeight: '50px' }}
+              style={{ ...compactInputStyle, resize: 'vertical', minHeight: '50px' }}
             />
           </div>
 
@@ -1310,16 +1259,4 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 500,
   color: 'var(--ink-2)',
   marginBottom: '4px',
-}
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '8px 10px',
-  background: 'var(--surface-2)',
-  border: '1px solid var(--line)',
-  borderRadius: 'var(--radius-sm)',
-  fontSize: '13px',
-  color: 'var(--ink)',
-  outline: 'none',
-  fontFamily: 'inherit',
 }

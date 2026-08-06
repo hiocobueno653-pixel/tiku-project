@@ -11,13 +11,9 @@ import {
 } from 'lucide-react'
 import AppShell from '../components/AppShell'
 import { useAppStore } from '../store/useAppStore'
-import {
-  computeSubjectCounts,
-  computeDifficultyCounts,
-  SUBJECT_COLORS,
-  type SubjectId,
-  type Difficulty,
-} from '../data/questions'
+import { computeSubjectCounts, computeDifficultyCounts } from '../data/stats'
+import { SUBJECT_COLORS } from '../data/sample-data'
+import type { SubjectId, Difficulty } from '../data/types'
 
 type SubjectIcon = 'math' | 'english' | 'physics' | 'chemistry'
 type IconProps = { size: number; color: string; strokeWidth: number }
@@ -242,11 +238,24 @@ export default function PracticeSetup() {
       <div className="px-4 mt-6 mb-6">
         <button
           onClick={startPractice}
+          disabled={userQuestions.length === 0}
           className="primary-btn"
         >
           <Play size={18} color="#fff" strokeWidth={2.5} fill="#fff" />
-          开始练习
+          {userQuestions.length === 0 ? '题库为空' : '开始练习'}
         </button>
+        {userQuestions.length === 0 && (
+          <p
+            style={{
+              textAlign: 'center',
+              fontSize: '12px',
+              color: 'var(--ink-3)',
+              marginTop: '10px',
+            }}
+          >
+            题库暂无题目，请先到「题库管理」添加或上传试卷
+          </p>
+        )}
       </div>
     </AppShell>
   )

@@ -7,14 +7,13 @@ import {
   Zap,
   Plus,
   Trash2,
-  X,
   Target,
   ChevronRight,
 } from 'lucide-react'
 import AppShell from '../components/AppShell'
-import {
-  todayISO,
-} from '../data/questions'
+import BottomSheet from '../components/BottomSheet'
+import { FormRow, inputStyle, SegmentedControl } from '../components/ui'
+import { todayISO } from '../data/persistence'
 import { useAppStore } from '../store/useAppStore'
 
 export default function DailyGoalPage() {
@@ -70,13 +69,15 @@ export default function DailyGoalPage() {
     const todayIdx = now.getDay()
     // 周一开始：调整顺序为 一/二/三/四/五/六/日
     const order = [1, 2, 3, 4, 5, 6, 0]
+    // 今天相对本周一（周一为一周起点）的天数：周日=6，周一=0 ... 周六=5
+    const mondayOffset = (todayIdx + 6) % 7
     for (const dow of order) {
       const isToday = dow === todayIdx
-      // 简单逻辑：今天之前若 streakDays 覆盖则视为已打卡
-      // 计算"周几"对应距今天的天数
-      let diff = dow - todayIdx
-      if (diff > 0) diff -= 7 // 未来日期 -> 负数（视为未打卡）
-      // diff = 0 表示今天，diff = -1 表示昨天 ...
+      // 该天在本周相对周一的位置（周一=0 ... 周日=6）
+      const dayOffset = dow === 0 ? 6 : dow - 1
+      // 该天相对今天的天数：负数=过去，0=今天，正数=未来（本周剩余）
+      const diff = dayOffset - mondayOffset
+      // 连续打卡覆盖：仅当该天在过去 且 距今不超过 streakDays-1 天时视为已打卡
       const filled = !isToday && diff >= -(streakDays - 1) && diff < 0 && streakDays > 0
       result.push({
         day: dayNames[dow],
@@ -89,7 +90,7 @@ export default function DailyGoalPage() {
 
   return (
     <AppShell>
-      <div className="screen-header screen-header-start" style={{ paddingBottom: 32 }}>
+      <div className="screen-header screen-header-start">
         {/* Header */}
         <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
           <div>
@@ -203,7 +204,7 @@ export default function DailyGoalPage() {
                 borderRadius: 'var(--radius-lg)',
                 padding: '32px 20px',
                 textAlign: 'center',
-                boxShadow: 'var(--shadow-2)',
+                boxShadow: 'var(--inner-hl), var(--shadow-2)',
               }}
             >
               <div
@@ -266,15 +267,14 @@ export default function DailyGoalPage() {
             goals.map((g) => (
               <div
                 key={g.id}
+                className="surface-row"
                 style={{
-                  background: 'var(--surface)',
                   borderRadius: 'var(--radius-md)',
                   padding: '14px 16px',
                   marginBottom: '8px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '12px',
-                  boxShadow: 'var(--shadow-2)',
                 }}
               >
                 <button
@@ -369,7 +369,7 @@ export default function DailyGoalPage() {
               flexDirection: 'column',
               alignItems: 'center',
               gap: '16px',
-              boxShadow: 'var(--shadow-2)',
+              boxShadow: 'var(--inner-hl), var(--shadow-2)',
             }}
           >
             {/* 7-day week view — 基于真实 streakDays */}
@@ -479,147 +479,58 @@ export default function DailyGoalPage() {
 
       {/* ── 添加目标底部弹层 ── */}
       {showAddSheet && (
-        <div
-          onClick={() => setShowAddSheet(false)}
-          className="sheet-overlay"
-          style={{
-            background: 'rgba(15, 23, 42, 0.55)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="sheet"
-            style={{
-              paddingLeft: 20,
-              paddingRight: 20,
-              animation: 'slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-            }}
-          >
-            {/* 顶部 grabber */}
-            <div
-              style={{
-                width: '36px',
-                height: '4px',
-                background: 'var(--surface-3)',
-                borderRadius: '999px',
-                margin: '0 auto 16px',
-              }}
+        <BottomSheet title="添加学习目标" onClose={() => setShowAddSheet(false)}>
+          <FormRow label="目标内容">
+            <input
+              type="text"
+              value={newText}
+              onChange={(e) => setNewText(e.target.value)}
+              placeholder="例如：完成数学函数练习"
+              style={inputStyle}
+              autoFocus
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
-                添加学习目标
-              </h3>
-              <button
-                onClick={() => setShowAddSheet(false)}
-                aria-label="关闭"
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  background: 'var(--surface-2)',
-                  border: 'none',
-                  color: 'var(--ink-2)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <X size={16} strokeWidth={2.4} />
-              </button>
-            </div>
+          </FormRow>
 
-            <div style={{ marginBottom: '16px' }}>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: 'var(--ink-2)',
-                  marginBottom: '8px',
-                }}
-              >
-                目标内容
-              </label>
-              <input
-                type="text"
-                value={newText}
-                onChange={(e) => setNewText(e.target.value)}
-                placeholder="例如：完成数学函数练习"
-                style={{
-                  width: '100%',
-                  padding: '12px 14px',
-                  background: 'var(--surface-2)',
-                  border: '1px solid var(--line)',
-                  borderRadius: '12px',
-                  fontSize: '14px',
-                  color: 'var(--ink)',
-                  outline: 'none',
-                  fontFamily: 'inherit',
-                }}
-                autoFocus
-              />
-            </div>
-
-            <div style={{ marginBottom: '20px' }}>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: 'var(--ink-2)',
-                  marginBottom: '8px',
-                }}
-              >
-                题目数量：<span style={{ color: 'var(--brand)' }}>{newTotal}</span>
-              </label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                {[5, 10, 15, 20, 30].map((n) => (
-                  <button
-                    key={n}
-                    onClick={() => setNewTotal(n)}
-                    style={{
-                      flex: 1,
-                      padding: '8px 0',
-                      background: newTotal === n ? 'var(--brand)' : 'var(--surface-2)',
-                      color: newTotal === n ? '#fff' : 'var(--ink-2)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <button
-              onClick={submitGoal}
-              disabled={!newText.trim()}
+          <div style={{ marginBottom: '20px' }}>
+            <label
               style={{
-                width: '100%',
-                padding: '14px',
-                background: newText.trim()
-                  ? 'linear-gradient(135deg, var(--brand) 0%, var(--brand-light) 100%)'
-                  : 'var(--surface-3)',
-                color: newText.trim() ? '#fff' : 'var(--ink-3)',
-                border: 'none',
-                borderRadius: '14px',
-                fontSize: '15px',
+                display: 'block',
+                fontSize: '13px',
                 fontWeight: 600,
-                cursor: newText.trim() ? 'pointer' : 'not-allowed',
-                boxShadow: newText.trim() ? '0 6px 16px -4px rgba(47, 107, 255, 0.45)' : 'none',
+                color: 'var(--ink)',
+                marginBottom: '6px',
               }}
             >
-              添加目标
-            </button>
+              题目数量：<span style={{ color: 'var(--brand)' }}>{newTotal}</span>
+            </label>
+            <SegmentedControl
+              value={String(newTotal)}
+              options={[5, 10, 15, 20, 30].map((n) => ({ id: String(n), label: String(n) }))}
+              onChange={(id) => setNewTotal(Number(id))}
+            />
           </div>
-        </div>
+
+          <button
+            onClick={submitGoal}
+            disabled={!newText.trim()}
+            style={{
+              width: '100%',
+              padding: '14px',
+              background: newText.trim()
+                ? 'linear-gradient(135deg, var(--brand) 0%, var(--brand-light) 100%)'
+                : 'var(--surface-3)',
+              color: newText.trim() ? '#fff' : 'var(--ink-3)',
+              border: 'none',
+              borderRadius: '14px',
+              fontSize: '15px',
+              fontWeight: 600,
+              cursor: newText.trim() ? 'pointer' : 'not-allowed',
+              boxShadow: newText.trim() ? '0 6px 16px -4px rgba(47, 107, 255, 0.45)' : 'none',
+            }}
+          >
+            添加目标
+          </button>
+        </BottomSheet>
       )}
 
       <style>{`
@@ -663,10 +574,6 @@ export default function DailyGoalPage() {
         .streak-dot.empty {
           background: var(--surface-2);
           color: var(--ink-3);
-        }
-        @keyframes slideUp {
-          from { transform: translateY(100%); }
-          to { transform: translateY(0); }
         }
       `}</style>
     </AppShell>

@@ -8,10 +8,12 @@ import {
   loadChatHistory, saveChatHistory, clearChatHistory,
   loadFavoriteIds, saveFavoriteIds,
   nextQuestionId, todayISO,
-  type Question, type RecentActivity, type DailyGoal,
-  type LearningStats, type DailyPracticeRecord, type ChatMessageRecord,
-  type ParsedQuestion,
-} from '../data/questions'
+} from '../data/persistence'
+import type {
+  Question, RecentActivity, DailyGoal,
+  LearningStats, DailyPracticeRecord, ChatMessageRecord,
+  ParsedQuestion,
+} from '../data/types'
 
 /**
  * 全局应用状态 Store

@@ -15,19 +15,12 @@ import {
   Sparkles,
 } from 'lucide-react'
 import AppShell from '../components/AppShell'
-import {
-  generateAiReply,
-  loadAiConfig,
-  saveAiConfig,
-  clearAiConfig,
-  loadChatHistory,
-  saveChatHistory,
-  clearChatHistory,
-  AI_PROVIDER_PRESETS,
-  type AiApiConfig,
-  type AiProvider,
-  type ChatMessageRecord,
-} from '../data/questions'
+import BottomSheet from '../components/BottomSheet'
+import { FormRow, FieldError, inputStyle } from '../components/ui'
+import { generateAiReply } from '../data/ai-chat'
+import { loadAiConfig, saveAiConfig, clearAiConfig, AI_PROVIDER_PRESETS } from '../data/ai-config'
+import { loadChatHistory, saveChatHistory, clearChatHistory } from '../data/persistence'
+import type { AiApiConfig, AiProvider, ChatMessageRecord } from '../data/types'
 
 const SYSTEM_PROMPT =
   '你是一位耐心的学习辅导老师，专注于中学数学、英语、物理、化学等学科的答疑。回答请：1) 先简明扼要地给出结论；2) 然后逐步讲解思路与原理；3) 必要时举一个贴近生活的例子；4) 最后用一句话总结。语言简洁、准确，避免冗长。'
@@ -850,113 +843,30 @@ function ApiSettingsDrawer({
   }
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(15, 23, 42, 0.55)',
-        zIndex: 2000,
-        display: 'flex',
-        alignItems: 'flex-end',
-        justifyContent: 'center',
-        maxWidth: '28rem',
-        margin: '0 auto',
-        backdropFilter: 'blur(4px)',
-        WebkitBackdropFilter: 'blur(4px)',
-      }}
+    <BottomSheet
+      title="AI 模型配置"
+      icon={<Settings size={16} color="var(--brand)" strokeWidth={2.2} />}
+      onClose={onClose}
     >
+      {/* 隐私提示 */}
       <div
-        onClick={(e) => e.stopPropagation()}
-        className="animate-fade-in-up"
         style={{
-          width: '100%',
-          maxHeight: '92vh',
-          overflowY: 'auto',
-          background: 'var(--surface)',
-          borderRadius: 'var(--radius-xl) var(--radius-xl) 0 0',
-          padding: '0 16px calc(20px + env(safe-area-inset-bottom, 0px))',
-          boxShadow: '0 -8px 32px -8px rgba(15, 23, 42, 0.25)',
+          padding: '10px 12px',
+          background: 'var(--surface-2)',
+          borderRadius: '12px',
+          fontSize: '12px',
+          color: 'var(--ink-2)',
+          lineHeight: 1.5,
+          marginBottom: '16px',
+          display: 'flex',
+          gap: '8px',
         }}
       >
-        {/* Grabber Bar */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: '10px 0 6px',
-          }}
-        >
-          <div
-            style={{
-              width: '36px',
-              height: '4px',
-              borderRadius: '999px',
-              background: 'var(--surface-3)',
-            }}
-          />
-        </div>
-
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div
-              style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '10px',
-                background: 'var(--brand-8)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Settings size={16} color="var(--brand)" strokeWidth={2.2} />
-            </div>
-            <h2 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
-              AI 模型配置
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="关闭"
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              background: 'var(--surface-2)',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--ink-2)',
-            }}
-          >
-            <X size={18} strokeWidth={2} />
-          </button>
-        </div>
-
-        {/* 隐私提示 */}
-        <div
-          style={{
-            padding: '10px 12px',
-            background: 'var(--surface-2)',
-            borderRadius: '12px',
-            fontSize: '12px',
-            color: 'var(--ink-2)',
-            lineHeight: 1.5,
-            marginBottom: '16px',
-            display: 'flex',
-            gap: '8px',
-          }}
-        >
-          <AlertTriangle size={14} color="var(--state-warning)" strokeWidth={2} style={{ flexShrink: 0, marginTop: '2px' }} />
-          <span>
-            API Key 仅保存在浏览器 <code style={{ fontSize: '11px', background: 'var(--surface-3)', padding: '0 4px', borderRadius: '2px' }}>localStorage</code> 中，请求从你的浏览器直接发往服务商。请勿在公共电脑上保存。
-          </span>
-        </div>
+        <AlertTriangle size={14} color="var(--state-warning)" strokeWidth={2} style={{ flexShrink: 0, marginTop: '2px' }} />
+        <span>
+          API Key 仅保存在浏览器 <code style={{ fontSize: '11px', background: 'var(--surface-3)', padding: '0 4px', borderRadius: '2px' }}>localStorage</code> 中，请求从你的浏览器直接发往服务商。请勿在公共电脑上保存。
+        </span>
+      </div>
 
         <FormRow label="服务商">
           <div className="grid grid-cols-2 gap-2">
@@ -1136,42 +1046,6 @@ function ApiSettingsDrawer({
             保存
           </button>
         </div>
-      </div>
-    </div>
+    </BottomSheet>
   )
-}
-
-function FormRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ marginBottom: '14px' }}>
-      <label
-        style={{
-          display: 'block',
-          fontSize: '13px',
-          fontWeight: 600,
-          color: 'var(--ink)',
-          marginBottom: '6px',
-        }}
-      >
-        {label}
-      </label>
-      {children}
-    </div>
-  )
-}
-
-function FieldError({ children }: { children: React.ReactNode }) {
-  return <p style={{ fontSize: '11px', color: 'var(--state-error)', margin: '4px 0 0' }}>{children}</p>
-}
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '10px 12px',
-  background: 'var(--surface-2)',
-  border: '1px solid var(--line)',
-  borderRadius: '12px',
-  fontSize: '14px',
-  color: 'var(--ink)',
-  outline: 'none',
-  fontFamily: 'inherit',
 }

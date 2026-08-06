@@ -24,6 +24,10 @@ vite.config.d.ts
 *.log
 hs_err_pid*.log
 
+# Local agent artifacts (screenshots, reports, session logs)
+.codex/
+claude-md/
+
 # Local installers
 *.apk
 *.aab

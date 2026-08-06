@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, Bookmark, Edit2, Trash2, X, Upload, FileQuestion } from 'lucide-react'
+import { Plus, Search, Bookmark, Edit2, Trash2, Upload, FileQuestion } from 'lucide-react'
 import AppShell from '../components/AppShell'
+import BottomSheet from '../components/BottomSheet'
+import { FormRow, FieldError, inputStyle, selectStyle, SegmentedControl } from '../components/ui'
 import ExamUploader from '../components/ExamUploader'
 import { useAppStore } from '../store/useAppStore'
 import {
@@ -11,13 +13,15 @@ import {
   SUBJECT_COLORS,
   SUBJECT_LABELS,
   difficultyLabel,
-  loadAiConfig,
-  type AiApiConfig,
-  type Difficulty,
-  type ParsedQuestion,
-  type Question,
-  type SubjectId,
-} from '../data/questions'
+} from '../data/sample-data'
+import { loadAiConfig } from '../data/ai-config'
+import type {
+  AiApiConfig,
+  Difficulty,
+  ParsedQuestion,
+  Question,
+  SubjectId,
+} from '../data/types'
 
 const DIFFICULTY_COLOR: Record<Difficulty, { bg: string; fg: string }> = {
   simple: { bg: 'rgba(22, 163, 74, 0.10)', fg: 'var(--state-success)' },
@@ -155,7 +159,7 @@ export default function QuestionBank() {
       </div>
 
       {/* Search Bar */}
-      <div className="px-4 mt-3">
+      <div className="px-4 mt-4">
         <div className="search-field">
           <Search
             size={16}
@@ -216,25 +220,13 @@ export default function QuestionBank() {
       {/* Question List */}
       <div className="px-4 pb-24 mt-3">
         {filtered.length === 0 && (
-          <div
-            style={{
-              textAlign: 'center',
-              padding: '48px 16px',
-              color: 'var(--ink-3)',
-            }}
-          >
-            <FileQuestion
-              size={48}
-              strokeWidth={1.5}
-              style={{ margin: '0 auto 12px', opacity: 0.4 }}
-            />
-            <p style={{ fontSize: '15px', fontWeight: 500, color: 'var(--ink-2)', margin: '0 0 6px' }}>
-              没有找到匹配的题目
-            </p>
-            <p style={{ fontSize: '13px', margin: 0, lineHeight: 1.5 }}>
-              试试更换关键词，或点击右上角
-              <br />
-              「上传试卷」批量导入新题目
+          <div className="empty-state" style={{ padding: '48px 16px' }}>
+            <div className="empty-state-icon" style={{ width: '56px', height: '56px', borderRadius: '16px' }}>
+              <FileQuestion size={26} strokeWidth={1.8} color="var(--brand)" />
+            </div>
+            <p className="empty-state-title">没有找到匹配的题目</p>
+            <p className="empty-state-desc">
+              试试更换关键词，或点击右上角「上传试卷」批量导入新题目
             </p>
           </div>
         )}
@@ -287,8 +279,7 @@ export default function QuestionBank() {
   )
 }
 
-function QuestionCard({
-  q,
+function QuestionCard({  q,
   favorite,
   onToggleFavorite,
   onEdit,
@@ -304,15 +295,7 @@ function QuestionCard({
 }) {
   const diffColor = DIFFICULTY_COLOR[q.difficulty]
   return (
-    <div
-      style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--line)',
-        borderRadius: 'var(--radius-md)',
-        padding: '16px',
-        marginBottom: '12px',
-      }}
-    >
+    <div className="question-card">
       <div className="flex items-center justify-between" style={{ marginBottom: '8px' }}>
         <div className="flex items-center gap-2">
           <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ink)' }}>{q.id}</span>
@@ -518,245 +501,148 @@ function QuestionFormModal({
   }
 
   return (
-    <div
-      onClick={onClose}
-      className="sheet-overlay"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="sheet animate-fade-in-up"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="section-title">
-            {initial ? '编辑题目' : '新增题目'}
-          </h2>
-          <button
-            onClick={onClose}
-            aria-label="关闭"
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: 'var(--radius-full)',
-              background: 'var(--surface-2)',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--ink-2)',
-            }}
-          >
-            <X size={18} strokeWidth={2} />
-          </button>
-        </div>
+    <BottomSheet title={initial ? '编辑题目' : '新增题目'} onClose={onClose}>
+      <FormRow label="科目">
+        <select
+          value={form.subject}
+          onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value as SubjectId }))}
+          style={selectStyle}
+        >
+          {SUBJECTS.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+      </FormRow>
 
-        <FormRow label="科目">
-          <select
-            value={form.subject}
-            onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value as SubjectId }))}
-            style={selectStyle}
-          >
-            {SUBJECTS.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </FormRow>
+      <FormRow label="知识点分类">
+        <input
+          type="text"
+          placeholder="如：函数与导数 / 定语从句"
+          value={form.category}
+          onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+          style={inputStyle}
+        />
+        {touched && !form.category.trim() && <FieldError>请填写知识点分类</FieldError>}
+      </FormRow>
 
-        <FormRow label="知识点分类">
-          <input
-            type="text"
-            placeholder="如：函数与导数 / 定语从句"
-            value={form.category}
-            onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-            style={inputStyle}
-          />
-          {touched && !form.category.trim() && <FieldError>请填写知识点分类</FieldError>}
-        </FormRow>
+      <FormRow label="难度">
+        <SegmentedControl
+          value={form.difficulty}
+          options={DIFFICULTIES.map((d) => ({ id: d.id, label: d.label }))}
+          onChange={(id) => setForm((f) => ({ ...f, difficulty: id }))}
+        />
+      </FormRow>
 
-        <FormRow label="难度">
-          <div className="flex gap-2">
-            {DIFFICULTIES.map((d) => {
-              const active = d.id === form.difficulty
-              return (
+      <FormRow label="题目内容">
+        <textarea
+          placeholder="请输入完整的题目描述..."
+          value={form.content}
+          onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
+          rows={3}
+          style={{ ...inputStyle, resize: 'vertical', minHeight: '72px' }}
+        />
+        {touched && !form.content.trim() && <FieldError>请填写题目内容</FieldError>}
+      </FormRow>
+
+      <FormRow label="选项（请填写 4 个选项的内容）">
+        <div className="flex flex-col gap-2">
+          {(['A', 'B', 'C', 'D'] as const).map((key, i) => {
+            const isAnswer = form.answer === key
+            return (
+              <div key={key} className="flex items-center gap-2">
                 <button
-                  key={d.id}
                   type="button"
-                  onClick={() => setForm((f) => ({ ...f, difficulty: d.id }))}
+                  onClick={() => setForm((f) => ({ ...f, answer: key }))}
+                  aria-label={`设为正确答案 ${key}`}
                   style={{
-                    flex: 1,
-                    padding: '8px 0',
-                    borderRadius: 'var(--radius-md)',
-                    background: active ? 'var(--brand)' : 'var(--surface-2)',
-                    color: active ? '#fff' : 'var(--ink-2)',
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: 'var(--radius-full)',
+                    background: isAnswer ? 'var(--state-success)' : 'var(--surface-2)',
+                    color: isAnswer ? '#fff' : 'var(--ink-2)',
                     border: 'none',
-                    fontSize: '13px',
-                    fontWeight: active ? 600 : 500,
+                    fontSize: '12px',
+                    fontWeight: 600,
                     cursor: 'pointer',
+                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
                 >
-                  {d.label}
+                  {key}
                 </button>
-              )
-            })}
-          </div>
-        </FormRow>
-
-        <FormRow label="题目内容">
-          <textarea
-            placeholder="请输入完整的题目描述..."
-            value={form.content}
-            onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
-            rows={3}
-            style={{ ...inputStyle, resize: 'vertical', minHeight: '72px' }}
-          />
-          {touched && !form.content.trim() && <FieldError>请填写题目内容</FieldError>}
-        </FormRow>
-
-        <FormRow label="选项（请填写 4 个选项的内容）">
-          <div className="flex flex-col gap-2">
-            {(['A', 'B', 'C', 'D'] as const).map((key, i) => {
-              const isAnswer = form.answer === key
-              return (
-                <div key={key} className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setForm((f) => ({ ...f, answer: key }))}
-                    aria-label={`设为正确答案 ${key}`}
-                    style={{
-                      width: '28px',
-                      height: '28px',
-                      borderRadius: 'var(--radius-full)',
-                      background: isAnswer ? 'var(--state-success)' : 'var(--surface-2)',
-                      color: isAnswer ? '#fff' : 'var(--ink-2)',
-                      border: 'none',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {key}
-                  </button>
-                  <input
-                    type="text"
-                    placeholder={`选项 ${key} 内容`}
-                    value={form.options[i]}
-                    onChange={(e) => {
-                      const next = [...form.options] as FormState['options']
-                      next[i] = e.target.value
-                      setForm((f) => ({ ...f, options: next }))
-                    }}
-                    style={{ ...inputStyle, flex: 1 }}
-                  />
-                </div>
-              )
-            })}
-          </div>
-          <p style={{ fontSize: '11px', color: 'var(--ink-3)', margin: '6px 0 0' }}>
-            点击左侧字母圆圈可设为正确答案（绿色）
-          </p>
-          {touched && !form.options.every((o) => o.trim()) && (
-            <FieldError>4 个选项均需填写</FieldError>
-          )}
-        </FormRow>
-
-        <FormRow label="解析（可选）">
-          <textarea
-            placeholder="解题思路、知识点说明..."
-            value={form.explanation}
-            onChange={(e) => setForm((f) => ({ ...f, explanation: e.target.value }))}
-            rows={2}
-            style={{ ...inputStyle, resize: 'vertical', minHeight: '56px' }}
-          />
-        </FormRow>
-
-        {/* Actions */}
-        <div className="flex gap-3 mt-5">
-          <button
-            onClick={onClose}
-            style={{
-              flex: 1,
-              padding: '12px 0',
-              background: 'var(--surface-2)',
-              color: 'var(--ink)',
-              border: 'none',
-              borderRadius: 'var(--radius-md)',
-              fontSize: '15px',
-              fontWeight: 500,
-              cursor: 'pointer',
-            }}
-          >
-            取消
-          </button>
-          <button
-            onClick={submit}
-            style={{
-              flex: 1,
-              padding: '12px 0',
-              background: 'var(--brand)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 'var(--radius-md)',
-              fontSize: '15px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: 'var(--shadow-brand)',
-            }}
-          >
-            {initial ? '保存修改' : '添加题目'}
-          </button>
+                <input
+                  type="text"
+                  placeholder={`选项 ${key} 内容`}
+                  value={form.options[i]}
+                  onChange={(e) => {
+                    const next = [...form.options] as FormState['options']
+                    next[i] = e.target.value
+                    setForm((f) => ({ ...f, options: next }))
+                  }}
+                  style={{ ...inputStyle, flex: 1 }}
+                />
+              </div>
+            )
+          })}
         </div>
+        <p style={{ fontSize: '11px', color: 'var(--ink-3)', margin: '6px 0 0' }}>
+          点击左侧字母圆圈可设为正确答案（绿色）
+        </p>
+        {touched && !form.options.every((o) => o.trim()) && (
+          <FieldError>4 个选项均需填写</FieldError>
+        )}
+      </FormRow>
+
+      <FormRow label="解析（可选）">
+        <textarea
+          placeholder="解题思路、知识点说明..."
+          value={form.explanation}
+          onChange={(e) => setForm((f) => ({ ...f, explanation: e.target.value }))}
+          rows={2}
+          style={{ ...inputStyle, resize: 'vertical', minHeight: '56px' }}
+        />
+      </FormRow>
+
+      {/* Actions */}
+      <div className="flex gap-3 mt-5">
+        <button
+          onClick={onClose}
+          style={{
+            flex: 1,
+            padding: '12px 0',
+            background: 'var(--surface-2)',
+            color: 'var(--ink)',
+            border: 'none',
+            borderRadius: 'var(--radius-md)',
+            fontSize: '15px',
+            fontWeight: 500,
+            cursor: 'pointer',
+          }}
+        >
+          取消
+        </button>
+        <button
+          onClick={submit}
+          style={{
+            flex: 1,
+            padding: '12px 0',
+            background: 'var(--brand)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 'var(--radius-md)',
+            fontSize: '15px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            boxShadow: 'var(--shadow-brand)',
+          }}
+        >
+          {initial ? '保存修改' : '添加题目'}
+        </button>
       </div>
-    </div>
+    </BottomSheet>
   )
-}
-
-function FormRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ marginBottom: '14px' }}>
-      <label
-        style={{
-          display: 'block',
-          fontSize: '13px',
-          fontWeight: 600,
-          color: 'var(--ink)',
-          marginBottom: '6px',
-        }}
-      >
-        {label}
-      </label>
-      {children}
-    </div>
-  )
-}
-
-function FieldError({ children }: { children: React.ReactNode }) {
-  return (
-    <p style={{ fontSize: '11px', color: 'var(--state-error)', margin: '4px 0 0' }}>{children}</p>
-  )
-}
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '10px 12px',
-  background: 'var(--surface-2)',
-  border: '1px solid var(--line)',
-  borderRadius: 'var(--radius-md)',
-  fontSize: '14px',
-  color: 'var(--ink)',
-  outline: 'none',
-  fontFamily: 'inherit',
-}
-
-const selectStyle: React.CSSProperties = {
-  ...inputStyle,
-  appearance: 'none',
-  WebkitAppearance: 'none',
-  cursor: 'pointer',
 }

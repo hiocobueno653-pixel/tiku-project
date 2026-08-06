@@ -2,18 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   appendRecentActivity,
   applyPracticeToDailyGoals,
-  computeSubjectCounts,
-  extractJsonArray,
-  fillDailyRecords,
   loadFavoriteIds,
   loadRecentActivities,
   nextQuestionId,
-  normalizeQuestions,
   recordPracticeSession,
   saveDailyGoals,
   saveFavoriteIds,
-  type Question,
-} from './questions'
+} from './persistence'
+import { computeSubjectCounts, fillDailyRecords } from './stats'
+import { extractJsonArray, normalizeQuestions } from './exam-parser'
+import type { Question } from './types'
 import { useAppStore } from '../store/useAppStore'
 
 describe('nextQuestionId', () => {
