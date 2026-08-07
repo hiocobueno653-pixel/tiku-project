@@ -186,6 +186,9 @@ export default function AiChat() {
       <div
         className="ai-chat-header"
         style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 50,
           background: 'linear-gradient(180deg, var(--bg) 0%, rgba(241, 242, 247, 0.85) 100%)',
           borderBottom: '1px solid rgba(226, 232, 240, 0.6)',
         }}
@@ -281,9 +284,6 @@ export default function AiChat() {
       <div
         ref={scrollRef}
         className="ai-chat-body"
-        style={{
-          padding: '16px 16px 24px',
-        }}
       >
         {isEmpty ? (
           <EmptyState
@@ -356,13 +356,7 @@ export default function AiChat() {
       )}
 
       {/* ── 输入区（与聊天区融为一体，不浮空） ── */}
-      <div
-        className="ai-chat-input-wrap"
-        style={{
-          padding: '10px 16px calc(16px + env(safe-area-inset-bottom, 0px))',
-          background: 'linear-gradient(180deg, rgba(241, 242, 247, 0.4) 0%, var(--bg) 60%)',
-        }}
-      >
+      <div className="ai-chat-input-wrap">
         <div
           className="ai-chat-input-pill"
           style={{

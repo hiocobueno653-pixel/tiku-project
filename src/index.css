@@ -1474,20 +1474,29 @@ select:focus-visible {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* ── AI 问答页：全高 flex 布局，输入框固定在底部（导航上方） ── */
+/* ── AI 问答页：页面正常滚动，输入框 fixed 固定在导航上方 ── */
 .ai-chat-page {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  height: calc(100dvh - 104px - env(safe-area-inset-bottom, 0px));
 }
 .ai-chat-page .ai-chat-body {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
+  padding: 16px 16px 170px;
+}
+/* 输入区：固定在视口底部、导航栏上方；不透明背景盖住滚过的消息 */
+.ai-chat-input-wrap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  z-index: 900;
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: 10px 16px;
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg) 100%);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1509,42 +1518,60 @@ select:focus-visible {
   /* 滚动方向响应：收起/恢复仅动 transform（合成器动画，不触发重排） */
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Liquid glass: 高不透明度基底 + 重模糊增强。
-     Android WebView 对 backdrop-filter 支持不稳，失效时基底仍保证可读；
-     支持时模糊让环境光斑透出，兼顾质感与对比度 */
+  /* Liquid glass: 半透明基底 + 重模糊 + 折射高光。
+     玻璃感来自"能透出背后光斑的模糊"——不透明度刻意压低；
+     无 backdrop-filter 的环境由 @supports 兜底为不透明基底 */
   background: linear-gradient(
     170deg,
-    rgba(255, 255, 255, 0.90) 0%,
-    rgba(255, 255, 255, 0.82) 34%,
-    rgba(240, 244, 255, 0.84) 62%,
-    rgba(255, 255, 255, 0.88) 100%
+    rgba(255, 255, 255, 0.52) 0%,
+    rgba(255, 255, 255, 0.34) 32%,
+    rgba(238, 243, 255, 0.40) 62%,
+    rgba(255, 255, 255, 0.48) 100%
   );
-  backdrop-filter: blur(48px) saturate(2.8) brightness(1.12);
-  -webkit-backdrop-filter: blur(48px) saturate(2.8) brightness(1.12);
+  backdrop-filter: blur(36px) saturate(2.4) brightness(1.08);
+  -webkit-backdrop-filter: blur(36px) saturate(2.4) brightness(1.08);
 
   /* Glass border: 明亮边缘捕捉 + 微蓝染 */
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 26px;
 
-  /* Multi-layer depth — 顶部双层高光 + 底部反光 + 厚度暗影 + 左右侧光 + 品牌光晕 */
+  /* Multi-layer depth — 顶部折射 + 厚度暗影 + 边缘捕捉 + 品牌光晕 + 悬浮 */
   box-shadow:
-    /* 顶部 1.5px 亮边 — 主折射高光 */
-    inset 0 1.5px 0 0 rgba(255, 255, 255, 0.95),
-    /* 顶部次亮带 — 高光下沿的柔光 */
-    inset 0 3px 8px -3px rgba(255, 255, 255, 0.55),
-    /* 底部微弱反光 — 下沿折射 */
-    inset 0 -1.5px 0 0 rgba(255, 255, 255, 0.35),
-    /* 玻璃厚度感 — 下沿内侧暗影 */
-    inset 0 -10px 24px -10px rgba(26, 26, 31, 0.14),
-    /* 左右内侧侧光 — 液态边缘捕捉 */
-    inset 5px 0 14px -6px rgba(255, 255, 255, 0.45),
-    inset -5px 0 14px -6px rgba(255, 255, 255, 0.45),
+    /* 顶部亮边 — 主折射高光 */
+    inset 0 1.5px 0 0 rgba(255, 255, 255, 0.9),
+    /* 顶部次亮带 — 高光下沿柔光 */
+    inset 0 4px 10px -4px rgba(255, 255, 255, 0.5),
+    /* 玻璃厚度 — 下沿内侧暗影 */
+    inset 0 -12px 24px -12px rgba(26, 26, 31, 0.16),
+    /* 边缘捕捉 — 左右内侧侧光 */
+    inset 6px 0 16px -6px rgba(255, 255, 255, 0.5),
+    inset -6px 0 16px -6px rgba(255, 255, 255, 0.5),
     /* 品牌色光晕（外） */
-    0 4px 14px -2px rgba(37, 99, 235, 0.28),
-    0 12px 40px -8px rgba(37, 99, 235, 0.30),
+    0 4px 14px -2px rgba(37, 99, 235, 0.26),
+    0 12px 40px -8px rgba(37, 99, 235, 0.28),
     /* 悬浮深度 */
     0 4px 20px -4px rgba(26, 26, 31, 0.14),
     0 1px 3px rgba(26, 26, 31, 0.06);
+}
+
+/* 无 backdrop-filter 环境兜底：不透明基底保证可读（Android WebView 旧内核等） */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .bottom-nav-bar {
+    background: linear-gradient(
+      170deg,
+      rgba(255, 255, 255, 0.96) 0%,
+      rgba(255, 255, 255, 0.92) 100%
+    );
+    border-color: rgba(221, 217, 212, 0.9);
+  }
+  .dark .bottom-nav-bar {
+    background: linear-gradient(
+      170deg,
+      rgba(30, 30, 36, 0.97) 0%,
+      rgba(22, 26, 40, 0.96) 100%
+    );
+    border-color: rgba(255, 255, 255, 0.12);
+  }
 }
 
 /* 滚动方向响应：向上滚 → 下移收起（底边藏入视口边缘，露出"上浮"感）；
@@ -1553,46 +1580,35 @@ select:focus-visible {
   transform: translateX(-50%) translateY(35%);
 }
 
-/* Liquid glass overlay: 3 层折射 — 主对角高光 + 左右斜向边缘光带（边缘捕捉） */
+/* Liquid glass overlay: 液体曲面折射高光 — 弯曲液面上的光扭曲
+   用径向渐变模拟"光线穿过弧面"的聚散，而非平面线性高光 */
 .bottom-nav-bar::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: 26px;
   background:
-    /* 左边缘斜向折射光带 */
-    linear-gradient(
-      105deg,
-      rgba(255, 255, 255, 0.30) 0%,
-      rgba(255, 255, 255, 0.10) 12%,
-      transparent 26%
-    ),
-    /* 右边缘斜向反光带 */
-    linear-gradient(
-      285deg,
-      transparent 70%,
-      rgba(255, 255, 255, 0.08) 90%,
-      rgba(255, 255, 255, 0.24) 100%
-    ),
-    /* 主对角高光 — 曲面折射 */
-    linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.42) 0%,
-      rgba(255, 255, 255, 0.10) 24%,
-      transparent 46%,
-      rgba(255, 255, 255, 0.05) 66%,
-      rgba(255, 255, 255, 0.18) 100%
-    );
+    /* 顶部弧面高光 — 液面隆起处最亮 */
+    radial-gradient(120% 90% at 14% -8%, rgba(255, 255, 255, 0.60) 0%, rgba(255, 255, 255, 0.18) 34%, transparent 55%),
+    /* 右上第二光源 — 多光源穿透液面 */
+    radial-gradient(70% 55% at 88% 4%, rgba(255, 255, 255, 0.32) 0%, transparent 60%),
+    /* 左缘光带 — 边缘捕捉 */
+    linear-gradient(100deg, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.06) 10%, transparent 22%),
+    /* 右缘反光带 — 边缘捕捉 */
+    linear-gradient(280deg, transparent 74%, rgba(255, 255, 255, 0.06) 90%, rgba(255, 255, 255, 0.22) 100%),
+    /* 中段微光 — 液面平缓区 */
+    radial-gradient(60% 40% at 50% 30%, rgba(255, 255, 255, 0.10) 0%, transparent 70%);
   pointer-events: none;
   z-index: -1;
 }
 
-/* Liquid glass edge: 彩色边缘捕捉 */
+/* Liquid glass under-glow: 下缘弧形反光 — 水滴底部的折射亮弧 + 彩色边缘 */
 .bottom-nav-bar::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: 26px;
+  background: radial-gradient(85% 26% at 50% 102%, rgba(255, 255, 255, 0.34) 0%, transparent 70%);
   border: 1px solid rgba(37, 99, 235, 0.10);
   pointer-events: none;
   z-index: -1;
@@ -1756,21 +1772,20 @@ select:focus-visible {
 .dark .bottom-nav-bar {
   background: linear-gradient(
     170deg,
-    rgba(30, 30, 36, 0.88) 0%,
-    rgba(26, 26, 31, 0.80) 34%,
-    rgba(22, 26, 40, 0.82) 62%,
-    rgba(30, 30, 36, 0.86) 100%
+    rgba(30, 30, 36, 0.50) 0%,
+    rgba(26, 26, 31, 0.34) 32%,
+    rgba(22, 26, 40, 0.40) 62%,
+    rgba(30, 30, 36, 0.46) 100%
   );
-  backdrop-filter: blur(48px) saturate(2.2) brightness(0.92);
-  -webkit-backdrop-filter: blur(48px) saturate(2.2) brightness(0.92);
-  border-color: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(36px) saturate(2.2) brightness(0.95);
+  -webkit-backdrop-filter: blur(36px) saturate(2.2) brightness(0.95);
+  border-color: rgba(255, 255, 255, 0.12);
   box-shadow:
-    inset 0 1.5px 0 0 rgba(255, 255, 255, 0.12),
-    inset 0 3px 8px -3px rgba(255, 255, 255, 0.06),
-    inset 0 -1.5px 0 0 rgba(255, 255, 255, 0.04),
-    inset 0 -10px 24px -10px rgba(0, 0, 0, 0.45),
-    inset 5px 0 14px -6px rgba(255, 255, 255, 0.05),
-    inset -5px 0 14px -6px rgba(255, 255, 255, 0.05),
+    inset 0 1.5px 0 0 rgba(255, 255, 255, 0.16),
+    inset 0 4px 10px -4px rgba(255, 255, 255, 0.05),
+    inset 0 -12px 24px -12px rgba(0, 0, 0, 0.50),
+    inset 6px 0 16px -6px rgba(255, 255, 255, 0.04),
+    inset -6px 0 16px -6px rgba(255, 255, 255, 0.04),
     0 4px 14px -2px rgba(96, 165, 250, 0.20),
     0 12px 40px -8px rgba(96, 165, 250, 0.18),
     0 4px 20px -4px rgba(0, 0, 0, 0.40),
@@ -1778,11 +1793,14 @@ select:focus-visible {
 }
 .dark .bottom-nav-bar::before {
   background:
-    linear-gradient(105deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 12%, transparent 26%),
-    linear-gradient(285deg, transparent 70%, rgba(255, 255, 255, 0.02) 90%, rgba(255, 255, 255, 0.06) 100%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.02) 24%, transparent 46%, rgba(255, 255, 255, 0.01) 66%, rgba(255, 255, 255, 0.05) 100%);
+    radial-gradient(120% 90% at 14% -8%, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.05) 34%, transparent 55%),
+    radial-gradient(70% 55% at 88% 4%, rgba(255, 255, 255, 0.08) 0%, transparent 60%),
+    linear-gradient(100deg, rgba(255, 255, 255, 0.06) 0%, transparent 22%),
+    linear-gradient(280deg, transparent 74%, rgba(255, 255, 255, 0.06) 100%),
+    radial-gradient(60% 40% at 50% 30%, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
 }
 .dark .bottom-nav-bar::after {
+  background: radial-gradient(85% 26% at 50% 102%, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
   border-color: rgba(96, 165, 250, 0.12);
 }
 .dark .bottom-nav-bar .nav-shimmer::before {
