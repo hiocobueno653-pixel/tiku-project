@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { X, Clock, SkipForward, Check, ChevronRight, RotateCcw, Library } from 'lucide-react'
 import AppShell from '../components/AppShell'
@@ -14,6 +14,31 @@ interface SessionQuestion extends Question {
   skipped?: boolean
 }
 
+/** 构建本轮练习题目：按科目/难度筛选 + Fisher-Yates 洗牌 + 循环补齐到 total 题 */
+function buildSessionQuestions(
+  pool: Question[],
+  subject: SubjectId,
+  difficulty: Difficulty | 'all',
+  total: number,
+): SessionQuestion[] {
+  let filtered = pool.filter((q) => q.subject === subject)
+  if (difficulty !== 'all') filtered = filtered.filter((q) => q.difficulty === difficulty)
+  // 若该科目/难度下无题目，回退到全部用户题库
+  if (filtered.length === 0) filtered = pool.slice()
+  // 若用户题库完全为空，返回空数组（外层会显示空状态）
+  if (filtered.length === 0) return []
+  const shuffled = [...filtered]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  const out: SessionQuestion[] = []
+  for (let i = 0; i < total; i++) {
+    out.push({ ...shuffled[i % shuffled.length] })
+  }
+  return out
+}
+
 export default function PracticeSession() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -24,34 +49,17 @@ export default function PracticeSession() {
   const total = Math.max(1, Number(params.get('count') || 10))
   const timed = params.get('timed') !== 'false'
 
-  // Build a stable question set for this session — 从用户题库读取
-  const sessionQuestions = useMemo<SessionQuestion[]>(() => {
-    const userPool = userQuestions
-    let pool = userPool.filter((q) => q.subject === subject)
-    if (difficulty !== 'all') pool = pool.filter((q) => q.difficulty === difficulty)
-    // 若该科目/难度下无题目，回退到全部用户题库
-    if (pool.length === 0) pool = userPool.slice()
-    // 若用户题库完全为空，返回空数组（外层会显示空状态）
-    if (pool.length === 0) return []
-    // Fisher-Yates 洗牌，确保均匀随机分布
-    const shuffled = [...pool]
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-    }
-    const out: SessionQuestion[] = []
-    for (let i = 0; i < total; i++) {
-      out.push({ ...shuffled[i % shuffled.length] })
-    }
-    return out
-  }, [subject, difficulty, total, userQuestions])
+  // Build a stable question set once per session mount — 从用户题库读取
+  const [sessionQuestions] = useState<SessionQuestion[]>(() =>
+    buildSessionQuestions(userQuestions, subject, difficulty, total),
+  )
 
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<string | undefined>(undefined)
   const [phase, setPhase] = useState<Phase>('answering')
   const [answers, setAnswers] = useState<SessionQuestion[]>(sessionQuestions)
   const [elapsed, setElapsed] = useState(0)
-  const [recorded, setRecorded] = useState(false) // 防止重复记录
+  const recordedRef = useRef(false) // 防止重复记录
 
   // 计算本次练习的统计结果（仅当 finished 时使用）
   const sessionStats = useMemo(() => {
@@ -63,7 +71,7 @@ export default function PracticeSession() {
 
   // 进入 finished 阶段时，记录到 localStorage（仅一次）
   useEffect(() => {
-    if (phase !== 'finished' || recorded || !sessionStats) return
+    if (phase !== 'finished' || recordedRef.current || !sessionStats) return
     if (sessionStats.total === 0) return
     // 1. 累计做题数和正确数 + 更新连续打卡 + 累计学习时长
     recordSession(sessionStats.correct, sessionStats.answered, elapsed)
@@ -80,8 +88,8 @@ export default function PracticeSession() {
       score: accuracy,
       completed: true,
     })
-    setRecorded(true)
-  }, [phase, recorded, sessionStats, elapsed, recordSession])
+    recordedRef.current = true
+  }, [phase, sessionStats, elapsed, recordSession])
 
   // Timer
   useEffect(() => {
@@ -124,7 +132,7 @@ export default function PracticeSession() {
     setPhase('answering')
     setElapsed(0)
     setAnswers(sessionQuestions.map((q) => ({ ...q })))
-    setRecorded(false)
+    recordedRef.current = false
   }
 
   // 题库为空时显示空状态

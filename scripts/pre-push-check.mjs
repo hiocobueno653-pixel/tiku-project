@@ -24,5 +24,6 @@ function run(label, args) {
 }
 
 run('单元测试', ['test'])
+run('代码检查', ['run', 'lint'])
 run('生产构建', ['run', 'build'])
 process.stdout.write('\n✓ pre-push 校验全部通过，可以推送。\n')

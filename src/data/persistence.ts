@@ -60,6 +60,12 @@ function loadVersioned<T>(
       const recovered = parseRaw(backupRaw)
       if (recovered !== null) return recovered
     }
+    // .bak 也损坏或缺失：尝试更早一代的 .bak.1
+    const backup2Raw = window.localStorage.getItem(`${key}.bak.1`)
+    if (backup2Raw) {
+      const recovered = parseRaw(backup2Raw)
+      if (recovered !== null) return recovered
+    }
     console.warn(`[persistence] 数据与备份均无法解析，已降级为默认值: ${key}`)
     return null
   } catch {
@@ -71,10 +77,18 @@ function loadVersioned<T>(
 function saveVersioned<T>(key: string, data: T, version: number): void {
   if (typeof window === 'undefined') return
   try {
-    // 写入前把当前值备份到 <key>.bak（覆盖式备份，配额友好）
+    // 双代备份：当前值 → .bak，旧 .bak → .bak.1（覆盖式，配额友好）
     const current = window.localStorage.getItem(key)
     if (current !== null) {
       try {
+        const prevBackup = window.localStorage.getItem(`${key}.bak`)
+        if (prevBackup !== null) {
+          try {
+            window.localStorage.setItem(`${key}.bak.1`, prevBackup)
+          } catch {
+            // 旧代备份失败不阻断
+          }
+        }
         window.localStorage.setItem(`${key}.bak`, current)
       } catch {
         // 备份失败不阻断主写入
@@ -363,7 +377,14 @@ export function exportAllData(): Record<string, string> {
   try {
     for (let i = 0; i < window.localStorage.length; i++) {
       const key = window.localStorage.key(i)
-      if (!key || !key.startsWith(TIKU_PREFIX) || key.endsWith('.bak')) continue
+    if (
+      !key ||
+      !key.startsWith(TIKU_PREFIX) ||
+      key.endsWith('.bak') ||
+      key.endsWith('.bak.1')
+    ) {
+      continue
+    }
       const raw = window.localStorage.getItem(key)
       if (raw !== null) out[key] = raw
     }
@@ -381,7 +402,13 @@ export function importAllData(backup: unknown): number {
   }
   let count = 0
   for (const [key, value] of Object.entries(backup as Record<string, unknown>)) {
-    if (!key.startsWith(TIKU_PREFIX) || key.endsWith('.bak')) continue
+    if (
+      !key.startsWith(TIKU_PREFIX) ||
+      key.endsWith('.bak') ||
+      key.endsWith('.bak.1')
+    ) {
+      continue
+    }
     if (typeof value !== 'string') continue
     // 写回前校验可解析，避免导入损坏数据
     try {

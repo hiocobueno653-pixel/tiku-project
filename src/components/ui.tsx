@@ -1,7 +1,7 @@
 // 公共 UI 原语 — 表单行 / 字段错误 / 输入样式 / 关闭圆钮 / 分段选择
 // 消除 AiChat / QuestionBank / DailyGoal / ExamUploader 中的重复实现
 
-import type { CSSProperties, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { X } from 'lucide-react'
 
 /* ── 表单行：label + 控件 ── */
@@ -29,33 +29,6 @@ export function FieldError({ children }: { children: ReactNode }) {
   return (
     <p style={{ fontSize: '11px', color: 'var(--state-error)', margin: '4px 0 0' }}>{children}</p>
   )
-}
-
-/* ── 输入框通用样式（默认 / 紧凑两档） ── */
-export const inputStyle: CSSProperties = {
-  width: '100%',
-  padding: '10px 12px',
-  background: 'var(--surface-2)',
-  border: '1px solid var(--line)',
-  borderRadius: 'var(--radius-md)',
-  fontSize: '14px',
-  color: 'var(--ink)',
-  outline: 'none',
-  fontFamily: 'inherit',
-}
-
-export const compactInputStyle: CSSProperties = {
-  ...inputStyle,
-  padding: '8px 10px',
-  borderRadius: 'var(--radius-sm)',
-  fontSize: '13px',
-}
-
-export const selectStyle: CSSProperties = {
-  ...inputStyle,
-  appearance: 'none',
-  WebkitAppearance: 'none',
-  cursor: 'pointer',
 }
 
 /* ── 弹层右上角 32px 圆形关闭按钮 ── */

@@ -8,6 +8,7 @@
 - 开发：`npm run dev`
 - 测试：`npm test`（Vitest，收集 `src/**/*.test.{ts,tsx}`）
 - 聚焦测试：`npx vitest run <file>.test.ts(x)`（改动单模块时的低成本验证入口）
+- 代码检查：`npm run lint`（eslint + react-hooks 规则）
 - 构建：`npm run build`（`tsc -b && vite build`，先做类型检查）
 - 本地预览：`npm run preview`
 - Android 同步：`npx cap sync android`

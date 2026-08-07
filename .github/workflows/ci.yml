@@ -23,6 +23,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Lint
+        run: npm run lint
+
       - name: Check design token consistency
         run: node scripts/check-design-tokens.mjs
 

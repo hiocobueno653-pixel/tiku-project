@@ -144,12 +144,14 @@ describe('backup / restore', () => {
     expect(() => importAllData({ 'tiku.userQuestions.v1': '{broken' })).toThrow()
   })
 
-  it('excludes .bak keys from export', () => {
+  it('excludes .bak and .bak.1 keys from export', () => {
     saveUserQuestions([makeQuestion('Q.001')])
     window.localStorage.setItem('tiku.userQuestions.v1.bak', '{"__v":1,"data":[]}')
+    window.localStorage.setItem('tiku.userQuestions.v1.bak.1', '{"__v":1,"data":[]}')
 
     const backup = exportAllData()
     expect(Object.keys(backup)).not.toContain('tiku.userQuestions.v1.bak')
+    expect(Object.keys(backup)).not.toContain('tiku.userQuestions.v1.bak.1')
   })
 })
 
@@ -169,8 +171,23 @@ describe('corrupted data recovery', () => {
   it('falls back to defaults when both primary and backup are corrupted', () => {
     window.localStorage.setItem('tiku.learningStats.v1', 'not-json')
     window.localStorage.setItem('tiku.learningStats.v1.bak', 'also-not-json')
+    window.localStorage.setItem('tiku.learningStats.v1.bak.1', 'still-not-json')
 
     const stats = loadLearningStats()
     expect(stats.totalAnswered).toBe(0)
+  })
+
+  it('recovers from the second-generation .bak.1 when .bak is also corrupted', () => {
+    saveUserQuestions([makeQuestion('Q.001')])
+    saveUserQuestions([makeQuestion('Q.002')])
+    saveUserQuestions([makeQuestion('Q.003')])
+    // 当前值 Q.003；.bak = Q.002 版本；.bak.1 = Q.001 版本
+    expect(window.localStorage.getItem('tiku.userQuestions.v1.bak.1')).not.toBeNull()
+
+    // 主数据与 .bak 都损坏，.bak.1 完好 → 恢复 Q.001 版本
+    window.localStorage.setItem('tiku.userQuestions.v1', '{broken json')
+    window.localStorage.setItem('tiku.userQuestions.v1.bak', '{broken json')
+
+    expect(loadUserQuestions()).toEqual([makeQuestion('Q.001')])
   })
 })

@@ -25,7 +25,7 @@ import {
 import { AI_PROVIDER_PRESETS } from '../data/ai-config'
 import type { AiApiConfig, ParsedQuestion, SubjectId, Difficulty } from '../data/types'
 import BottomSheet from './BottomSheet'
-import { compactInputStyle } from './ui'
+import { compactInputStyle } from './ui-styles'
 import { takePhoto, pickPhotos } from '../services/camera'
 
 type Stage = 'input' | 'parsing' | 'review' | 'done'
@@ -93,9 +93,10 @@ export default function ExamUploader({
 
   // 卸载时释放所有尚未 revoke 的 blob URL
   useEffect(() => {
+    const blobUrls = blobUrlsRef.current
     return () => {
-      blobUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
-      blobUrlsRef.current.clear()
+      blobUrls.forEach((url) => URL.revokeObjectURL(url))
+      blobUrls.clear()
     }
   }, [])
 
@@ -255,7 +256,7 @@ export default function ExamUploader({
       }
 
       // 调用 AI 解析
-      let result: { questions: ParsedQuestion[] } = { questions: [] }
+      const result: { questions: ParsedQuestion[] } = { questions: [] }
 
       if (allImages.length > 0) {
         setProgress({
