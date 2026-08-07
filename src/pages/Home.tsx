@@ -9,14 +9,18 @@ import {
   Library,
   Upload,
   Target,
+  Moon,
+  Sun,
 } from 'lucide-react'
 import AppShell from '../components/AppShell'
+import { useTheme } from '../hooks/useTheme'
 import { useAppStore } from '../store/useAppStore'
 import { todayISO } from '../data/persistence'
 
 export default function Home() {
   const navigate = useNavigate()
   const greeting = getGreeting()
+  const { theme, toggleTheme } = useTheme()
 
   const activities = useAppStore((s) => s.activities)
   const stats = useAppStore((s) => s.stats)
@@ -54,6 +58,18 @@ export default function Home() {
             {hasQuestions ? '今天也要加油哦' : '先去题库添加题目吧'}
           </p>
         </div>
+        <button
+          onClick={toggleTheme}
+          className="icon-btn"
+          aria-label={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+          title={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+        >
+          {theme === 'dark' ? (
+            <Sun size={18} strokeWidth={2} />
+          ) : (
+            <Moon size={18} strokeWidth={2} />
+          )}
+        </button>
       </div>
 
       {/* Today's Progress Card */}

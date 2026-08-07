@@ -364,6 +364,50 @@ export function clearChatHistory(): void {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   Theme preference (localStorage)
+   'light' | 'dark' | 'system'（默认跟随系统）
+   ═══════════════════════════════════════════════════════════ */
+const THEME_KEY = 'tiku.theme.v1'
+
+export type ThemePreference = 'light' | 'dark' | 'system'
+
+export function loadThemePreference(): ThemePreference {
+  if (typeof window === 'undefined') return 'system'
+  try {
+    const raw = window.localStorage.getItem(THEME_KEY)
+    if (raw === 'light' || raw === 'dark' || raw === 'system') return raw
+  } catch {
+    // 读取失败按默认
+  }
+  return 'system'
+}
+
+export function saveThemePreference(pref: ThemePreference): void {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(THEME_KEY, pref)
+  } catch {
+    console.warn(`[persistence] 主题偏好保存失败: ${THEME_KEY}`)
+  }
+}
+
+/** 计算当前实际生效的主题（展开 system） */
+export function resolveTheme(pref: ThemePreference): 'light' | 'dark' {
+  if (pref !== 'system') return pref
+  if (typeof window === 'undefined') return 'light'
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
+/** 把主题应用到 <html> 的 .dark 类（幂等） */
+export function applyTheme(pref: ThemePreference): 'light' | 'dark' {
+  const resolved = resolveTheme(pref)
+  if (typeof document !== 'undefined') {
+    document.documentElement.classList.toggle('dark', resolved === 'dark')
+  }
+  return resolved
+}
+
+/* ═══════════════════════════════════════════════════════════
    Backup / Restore (localStorage)
    导出全部 tiku.* 数据为 JSON 备份；导入时校验并写回。
    ═══════════════════════════════════════════════════════════ */

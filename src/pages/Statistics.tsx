@@ -15,6 +15,7 @@ import {
 import { Line, Bar, Doughnut } from 'react-chartjs-2'
 import { BarChart3, Sparkles, ChevronRight, Library, Zap, Download, Upload } from 'lucide-react'
 import AppShell from '../components/AppShell'
+import { useTheme } from '../hooks/useTheme'
 import { useAppStore } from '../store/useAppStore'
 import { exportAllData, importAllData, todayISO } from '../data/persistence'
 import { computeSubjectCounts, fillDailyRecords } from '../data/stats'
@@ -33,6 +34,14 @@ ChartJS.register(
 
 type Period = 'week' | 'month' | 'all'
 
+/** 读取 CSS 变量当前值（canvas 图表不识别 CSS 变量，需解析为实际颜色） */
+function readCssVar(name: string): string {
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim()
+  return value || '#000000'
+}
+
 export default function Statistics() {
   const navigate = useNavigate()
   const [period, setPeriod] = useState<Period>('week')
@@ -47,6 +56,17 @@ export default function Statistics() {
   const accuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0
   const streakDays = stats?.streakDays ?? 0
   const hasData = totalAnswered > 0
+  // 主题色板：图表颜色跟随当前主题（浅/暗色）
+  const { theme } = useTheme()
+  const palette = useMemo(() => {
+    const brand = readCssVar('--brand')
+    return {
+      brand,
+      brandSoft: `${brand}14`,
+      grid: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : readCssVar('--line'),
+      tick: theme === 'dark' ? 'rgba(255, 255, 255, 0.45)' : readCssVar('--ink-3'),
+    }
+  }, [theme])
 
   // 按周期筛选每日记录
   const filteredRecords = useMemo(() => {
@@ -74,17 +94,17 @@ export default function Statistics() {
         {
           label: '做题量',
           data: filteredRecords.map((r) => r.answered),
-          borderColor: '#2F6BFF',
-          backgroundColor: 'rgba(47, 107, 255, 0.08)',
+          borderColor: palette.brand,
+          backgroundColor: palette.brandSoft,
           fill: true,
           tension: 0.4,
-          pointBackgroundColor: '#2F6BFF',
+          pointBackgroundColor: palette.brand,
           pointRadius: 3,
           pointHoverRadius: 5,
         },
       ],
     }),
-    [filteredRecords, periodLabels],
+    [filteredRecords, periodLabels, palette],
   )
 
   const accuracyData = useMemo(
@@ -96,13 +116,13 @@ export default function Statistics() {
           data: filteredRecords.map((r) =>
             r.answered > 0 ? Math.round((r.correct / r.answered) * 100) : 0,
           ),
-          backgroundColor: '#2F6BFF',
+          backgroundColor: palette.brand,
           borderRadius: 6,
           maxBarThickness: 32,
         },
       ],
     }),
-    [filteredRecords, periodLabels],
+    [filteredRecords, periodLabels, palette],
   )
 
   // 科目分布 — 基于真实用户题库
@@ -128,13 +148,13 @@ export default function Statistics() {
     plugins: { legend: { display: false } },
     scales: {
       x: {
-        grid: { color: '#E2E8F0' },
-        ticks: { color: '#94A3B8', font: { size: 11 } },
+        grid: { color: palette.grid },
+        ticks: { color: palette.tick, font: { size: 11 } },
         border: { display: false },
       },
       y: {
-        grid: { color: '#E2E8F0' },
-        ticks: { color: '#94A3B8', font: { size: 11 } },
+        grid: { color: palette.grid },
+        ticks: { color: palette.tick, font: { size: 11 } },
         border: { display: false },
         beginAtZero: true,
       },
@@ -148,13 +168,13 @@ export default function Statistics() {
     scales: {
       x: {
         grid: { display: false },
-        ticks: { color: '#94A3B8', font: { size: 11 } },
+        ticks: { color: palette.tick, font: { size: 11 } },
         border: { display: false },
       },
       y: {
-        grid: { color: '#E2E8F0' },
+        grid: { color: palette.grid },
         ticks: {
-          color: '#94A3B8',
+          color: palette.tick,
           font: { size: 11 },
           callback: (v) => `${v}%`,
         },

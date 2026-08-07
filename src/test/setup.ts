@@ -51,6 +51,22 @@ if (typeof (globalThis as { scrollTo?: unknown }).scrollTo !== 'function') {
   })
 }
 
+// jsdom 未实现 matchMedia；固定为 light（matches=false）以便测试可预测
+Object.defineProperty(globalThis, 'matchMedia', {
+  value: (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  }),
+  configurable: true,
+  writable: true,
+})
+
 beforeEach(() => {
   window.localStorage.clear()
 })

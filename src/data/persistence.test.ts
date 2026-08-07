@@ -4,11 +4,14 @@ import {
   clearChatHistory,
   exportAllData,
   importAllData,
+  loadThemePreference,
   loadChatHistory,
   loadDailyPracticeRecords,
   loadLearningStats,
   loadUserQuestions,
   localDateISO,
+  resolveTheme,
+  saveThemePreference,
   saveChatHistory,
   saveUserQuestions,
 } from './persistence'
@@ -189,5 +192,49 @@ describe('corrupted data recovery', () => {
     window.localStorage.setItem('tiku.userQuestions.v1.bak', '{broken json')
 
     expect(loadUserQuestions()).toEqual([makeQuestion('Q.001')])
+  })
+})
+
+describe('theme preference', () => {
+  it('defaults to system when nothing is stored', () => {
+    expect(loadThemePreference()).toBe('system')
+  })
+
+  it('round-trips explicit light/dark choices', () => {
+    saveThemePreference('dark')
+    expect(loadThemePreference()).toBe('dark')
+    saveThemePreference('light')
+    expect(loadThemePreference()).toBe('light')
+  })
+
+  it('ignores corrupted stored values', () => {
+    window.localStorage.setItem('tiku.theme.v1', 'neon')
+    expect(loadThemePreference()).toBe('system')
+  })
+
+  it('resolves system preference from matchMedia', () => {
+    // jsdom 默认 prefers-color-scheme 为 light
+    expect(resolveTheme('system')).toBe('light')
+    expect(resolveTheme('dark')).toBe('dark')
+  })
+
+  it('resolves to dark when the system prefers dark', () => {
+    // 覆盖 matchMedia 返回 matches=true 的分支
+    const original = window.matchMedia
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes('dark'),
+      media: query,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+    })) as typeof window.matchMedia
+    try {
+      expect(resolveTheme('system')).toBe('dark')
+    } finally {
+      window.matchMedia = original
+    }
   })
 })
