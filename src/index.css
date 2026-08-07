@@ -310,7 +310,9 @@ select:focus-visible {
   margin: 0;
 }
 .screen-enter {
-  animation: screen-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  /* backwards（而非 both）：动画结束后不保留 transform/filter，
+     否则页面会成为 fixed 弹层的定位包含块，滚动后弹层定位错乱 */
+  animation: screen-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 /* ── Controls ── */
@@ -1448,7 +1450,7 @@ select:focus-visible {
   min-height: 100dvh;
   max-width: 28rem;
   margin: 0 auto;
-  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
   position: relative;
   /* 背景透明，让 body 的环境光斑透出（液态玻璃的模糊光源） */
   background:
@@ -1472,6 +1474,22 @@ select:focus-visible {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* ── AI 问答页：全高 flex 布局，输入框固定在底部（导航上方） ── */
+.ai-chat-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - 104px - env(safe-area-inset-bottom, 0px));
+}
+.ai-chat-page .ai-chat-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
 /* ═══════════════════════════════════════════════════════════
    Bottom Navigation Bar — Liquid Glass (液态玻璃)
    ═══════════════════════════════════════════════════════════ */
@@ -1491,14 +1509,15 @@ select:focus-visible {
   /* 滚动方向响应：收起/恢复仅动 transform（合成器动画，不触发重排） */
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Liquid glass: 半透明 + 重模糊（背景再降一档，环境光斑明显透出；
-     可读性由重模糊 + 顶部渐变密度 + 折射高光保证） */
+  /* Liquid glass: 高不透明度基底 + 重模糊增强。
+     Android WebView 对 backdrop-filter 支持不稳，失效时基底仍保证可读；
+     支持时模糊让环境光斑透出，兼顾质感与对比度 */
   background: linear-gradient(
     170deg,
-    rgba(255, 255, 255, 0.32) 0%,
-    rgba(255, 255, 255, 0.15) 34%,
-    rgba(235, 242, 255, 0.20) 62%,
-    rgba(255, 255, 255, 0.26) 100%
+    rgba(255, 255, 255, 0.90) 0%,
+    rgba(255, 255, 255, 0.82) 34%,
+    rgba(240, 244, 255, 0.84) 62%,
+    rgba(255, 255, 255, 0.88) 100%
   );
   backdrop-filter: blur(48px) saturate(2.8) brightness(1.12);
   -webkit-backdrop-filter: blur(48px) saturate(2.8) brightness(1.12);
@@ -1737,10 +1756,10 @@ select:focus-visible {
 .dark .bottom-nav-bar {
   background: linear-gradient(
     170deg,
-    rgba(30, 30, 36, 0.34) 0%,
-    rgba(26, 26, 31, 0.18) 34%,
-    rgba(22, 26, 40, 0.24) 62%,
-    rgba(30, 30, 36, 0.30) 100%
+    rgba(30, 30, 36, 0.88) 0%,
+    rgba(26, 26, 31, 0.80) 34%,
+    rgba(22, 26, 40, 0.82) 62%,
+    rgba(30, 30, 36, 0.86) 100%
   );
   backdrop-filter: blur(48px) saturate(2.2) brightness(0.92);
   -webkit-backdrop-filter: blur(48px) saturate(2.2) brightness(0.92);

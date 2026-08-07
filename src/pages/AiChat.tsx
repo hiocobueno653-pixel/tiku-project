@@ -181,16 +181,12 @@ export default function AiChat() {
 
   return (
     <AppShell>
+      <div className="ai-chat-page">
       {/* ── 顶部统一 Header（与 AppShell 一体，不割裂） ── */}
       <div
         className="ai-chat-header"
         style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 50,
           background: 'linear-gradient(180deg, var(--bg) 0%, rgba(241, 242, 247, 0.85) 100%)',
-          backdropFilter: 'blur(20px) saturate(1.4)',
-          WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
           borderBottom: '1px solid rgba(226, 232, 240, 0.6)',
         }}
       >
@@ -286,9 +282,7 @@ export default function AiChat() {
         ref={scrollRef}
         className="ai-chat-body"
         style={{
-          padding: '16px 16px 140px',
-          overflowY: 'auto',
-          minHeight: 'calc(100vh - 180px)',
+          padding: '16px 16px 24px',
         }}
       >
         {isEmpty ? (
@@ -367,8 +361,6 @@ export default function AiChat() {
         style={{
           padding: '10px 16px calc(16px + env(safe-area-inset-bottom, 0px))',
           background: 'linear-gradient(180deg, rgba(241, 242, 247, 0.4) 0%, var(--bg) 60%)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
         }}
       >
         <div
@@ -432,6 +424,7 @@ export default function AiChat() {
             <ArrowUp size={18} color="#fff" strokeWidth={2.5} />
           </button>
         </div>
+      </div>
       </div>
 
       {/* ── 清空对话确认弹窗 ── */}
