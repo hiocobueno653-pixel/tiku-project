@@ -1518,18 +1518,14 @@ select:focus-visible {
   /* 滚动方向响应：收起/恢复仅动 transform（合成器动画，不触发重排） */
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Liquid glass: 半透明基底 + 重模糊 + 折射高光。
-     玻璃感来自"能透出背后光斑的模糊"——不透明度刻意压低；
-     无 backdrop-filter 的环境由 @supports 兜底为不透明基底 */
+  /* Liquid glass — 默认态：高不透明基底 + 高光层（玻璃感来自折射高光）。
+     运行时检测到 backdrop-filter 真实可用时，由
+     html[data-backdrop='yes'] 切换为半透明真玻璃（见下） */
   background: linear-gradient(
     170deg,
-    rgba(255, 255, 255, 0.52) 0%,
-    rgba(255, 255, 255, 0.34) 32%,
-    rgba(238, 243, 255, 0.40) 62%,
-    rgba(255, 255, 255, 0.48) 100%
+    rgba(255, 255, 255, 0.96) 0%,
+    rgba(255, 255, 255, 0.90) 100%
   );
-  backdrop-filter: blur(36px) saturate(2.4) brightness(1.08);
-  -webkit-backdrop-filter: blur(36px) saturate(2.4) brightness(1.08);
 
   /* Glass border: 明亮边缘捕捉 + 微蓝染 */
   border: 1px solid rgba(255, 255, 255, 0.55);
@@ -1554,24 +1550,18 @@ select:focus-visible {
     0 1px 3px rgba(26, 26, 31, 0.06);
 }
 
-/* 无 backdrop-filter 环境兜底：不透明基底保证可读（Android WebView 旧内核等） */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .bottom-nav-bar {
-    background: linear-gradient(
-      170deg,
-      rgba(255, 255, 255, 0.96) 0%,
-      rgba(255, 255, 255, 0.92) 100%
-    );
-    border-color: rgba(221, 217, 212, 0.9);
-  }
-  .dark .bottom-nav-bar {
-    background: linear-gradient(
-      170deg,
-      rgba(30, 30, 36, 0.97) 0%,
-      rgba(22, 26, 40, 0.96) 100%
-    );
-    border-color: rgba(255, 255, 255, 0.12);
-  }
+/* ── 真玻璃态：运行时确认 backdrop-filter 可用后启用 ──
+   半透明基底让背后光斑透出，模糊形成真正的玻璃质感 */
+html[data-backdrop='yes'] .bottom-nav-bar {
+  background: linear-gradient(
+    170deg,
+    rgba(255, 255, 255, 0.52) 0%,
+    rgba(255, 255, 255, 0.34) 32%,
+    rgba(238, 243, 255, 0.40) 62%,
+    rgba(255, 255, 255, 0.48) 100%
+  );
+  backdrop-filter: blur(36px) saturate(2.4) brightness(1.08);
+  -webkit-backdrop-filter: blur(36px) saturate(2.4) brightness(1.08);
 }
 
 /* 滚动方向响应：向上滚 → 下移收起（底边藏入视口边缘，露出"上浮"感）；
@@ -1772,13 +1762,9 @@ select:focus-visible {
 .dark .bottom-nav-bar {
   background: linear-gradient(
     170deg,
-    rgba(30, 30, 36, 0.50) 0%,
-    rgba(26, 26, 31, 0.34) 32%,
-    rgba(22, 26, 40, 0.40) 62%,
-    rgba(30, 30, 36, 0.46) 100%
+    rgba(30, 30, 36, 0.97) 0%,
+    rgba(22, 26, 40, 0.96) 100%
   );
-  backdrop-filter: blur(36px) saturate(2.2) brightness(0.95);
-  -webkit-backdrop-filter: blur(36px) saturate(2.2) brightness(0.95);
   border-color: rgba(255, 255, 255, 0.12);
   box-shadow:
     inset 0 1.5px 0 0 rgba(255, 255, 255, 0.16),
@@ -1790,6 +1776,17 @@ select:focus-visible {
     0 12px 40px -8px rgba(96, 165, 250, 0.18),
     0 4px 20px -4px rgba(0, 0, 0, 0.40),
     0 1px 3px rgba(0, 0, 0, 0.22);
+}
+html[data-backdrop='yes'] .dark .bottom-nav-bar {
+  background: linear-gradient(
+    170deg,
+    rgba(30, 30, 36, 0.50) 0%,
+    rgba(26, 26, 31, 0.34) 32%,
+    rgba(22, 26, 40, 0.40) 62%,
+    rgba(30, 30, 36, 0.46) 100%
+  );
+  backdrop-filter: blur(36px) saturate(2.2) brightness(0.95);
+  -webkit-backdrop-filter: blur(36px) saturate(2.2) brightness(0.95);
 }
 .dark .bottom-nav-bar::before {
   background:
