@@ -94,6 +94,8 @@ export default function BottomNav() {
       className={`bottom-nav-bar${tucked ? ' nav-tucked' : ''}`}
       aria-label="主导航"
     >
+      {/* 玻璃颗粒噪点：液面材质的微纹理（纯装饰，不挡交互） */}
+      <span className="nav-grain" aria-hidden="true" />
       {/* 6s 循环的微光扫过带（纯装饰，不挡交互） */}
       <span className="nav-shimmer" aria-hidden="true" />
       {/* 滑块轨道：裁剪弹性过冲，让胶囊始终收在导航栏圆角内 */}

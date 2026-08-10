@@ -7,10 +7,13 @@
 ## 1. 设计语言：暖色底 + 液态玻璃 + 环境光斑
 
 - **暖中性底**：背景 `#F6F5F2`（暗色 `#0F0F12`），比冷灰更柔和。
-- **液态玻璃**：半透明渐变基底（导航 0.34–0.52，暗色同档）+ `backdrop-filter`
-  blur(36px) saturate(2.4) 让背后光斑透出形成玻璃感；液体曲面用径向渐变高光
-  模拟弧面折射 + 下缘弧形反光（水滴亮弧）+ 边缘光带。`@supports not
-  (backdrop-filter)` 兜底为不透明基底，保证 Android WebView 旧内核可读。
+- **液态玻璃**：半透明渐变基底（导航浅色 0.54–0.72，暗色 0.56–0.72）+
+  `backdrop-filter` blur(26px) saturate(1.9) 让背后光斑/滚动内容透出形成玻璃感；
+  液体曲面用径向渐变高光模拟弧面折射 + 左上主光斑（液滴反光）+ 下缘弧形反光
+  （水滴亮弧）+ 边缘光带 + SVG 分形噪点颗粒（overlay 混合，低透明度）。
+  底部留白 84px 让滚动内容经过导航栏后方（玻璃"有东西可模糊"）；运行时检测
+  `backdrop-filter`（`data-backdrop`），无 blur 环境兜底为 0.87–0.90 半透明
+  基底 + 内嵌模拟光斑，保证 Android WebView 旧内核也有玻璃感且可读。
 - **环境光斑**：body 上 5 个径向渐变光斑（品牌蓝/紫/青），卡片右上角有小光斑
   呼应；玻璃元素靠背后的光斑产生"透光"感。
 - **卡片语言**：顶部 1px 白色内高光（`--inner-hl`）+ 双层柔和投影；重点卡片顶部
@@ -47,7 +50,7 @@
 ## 4. 组件类清单（index.css）
 
 - **导航**：`.bottom-nav-bar`（液态玻璃）、`.nav-active-indicator`（物理滑块）、
-  `.nav-shimmer`（微光扫过）、`.nav-tucked`（滚动收起）
+  `.nav-shimmer`（微光扫过）、`.nav-grain`（玻璃颗粒噪点）、`.nav-tucked`（滚动收起）
 - **卡片**：`.card` / `.card-bordered` / `.card-elevated` / `.progress-card` /
   `.chart-card` / `.stat-card` / `.question-card` / `.activity-row` /
   `.recommend-card` / `.session-question-card` / `.setting-card`
